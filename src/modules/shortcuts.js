@@ -18,7 +18,6 @@
           bold: { key: 'Ctrl+B', label: '加粗' },
           italic: { key: 'Ctrl+I', label: '斜体' },
           insertLink: { key: 'Ctrl+K', label: '插入链接' },
-          exportPDF: { key: 'Ctrl+Shift+P', label: '导出 PDF' },
           inlineCode: { key: 'Ctrl+Shift+`', label: '行内代码' },
           strikethrough: { key: 'Ctrl+Shift+5', label: '删除线' },
           codeBlock: { key: 'Ctrl+Shift+K', label: '代码块' },
@@ -77,7 +76,7 @@
             bold:'', italic:'Ctrl+I', inlineCode:'Ctrl+`', insertLink:'Ctrl+K',
             insertMathBlock:'Ctrl+Shift+M', toggleTheme:'Ctrl+Shift+T', fileSearch:'Ctrl+P',
             // VS Code 特色绑定（合并自 PR #36）：Ctrl+B 切换侧边栏（与 bold 冲突，bold 留空可自定义）；
-            // Ctrl+P 为文件搜索（VS Code Quick Open），原「导出 PDF」迁到 Ctrl+Shift+P（见 default 方案）。
+            // Ctrl+P 为文件搜索（VS Code Quick Open）。
             toggleSidebar:'Ctrl+B',
             insertLineBelow:'Ctrl+Enter', insertLineAbove:'Ctrl+Shift+Enter',
           },
@@ -85,7 +84,7 @@
             newFile:'Ctrl+N', openFile:'Ctrl+O', saveFile:'Ctrl+S', closeTab:'Ctrl+W',
             find:'Ctrl+F', crossSearch:'Ctrl+H',
             nextTab:'Ctrl+Tab', prevTab:'Ctrl+Shift+Tab',
-            bold:'Ctrl+B', italic:'Ctrl+I', insertLink:'Ctrl+K', exportPDF:'Ctrl+P', fileSearch:'',
+            bold:'Ctrl+B', italic:'Ctrl+I', insertLink:'Ctrl+K', fileSearch:'',
             inlineCode:'Ctrl+Shift+`', strikethrough:'Ctrl+Shift+5', codeBlock:'Ctrl+Shift+K',
             blockquote:'Ctrl+Shift+Q', toggleTheme:'Ctrl+Shift+T',
             insertImage:'Ctrl+Shift+I', insertMathBlock:'Ctrl+Shift+M',
@@ -97,7 +96,7 @@
             newFile:'Ctrl+N', openFile:'Ctrl+O', saveFile:'Ctrl+S', saveAs:'Ctrl+Shift+S',
             closeTab:'Ctrl+W', find:'Ctrl+F', crossSearch:'Ctrl+H',
             nextTab:'Ctrl+Tab', prevTab:'Ctrl+Shift+Tab',
-            exportPDF:'Ctrl+P', toggleTheme:'Ctrl+Shift+T', fileSearch:'',
+            toggleTheme:'Ctrl+Shift+T', fileSearch:'',
             insertLineBelow:'Ctrl+Enter', insertLineAbove:'Ctrl+Shift+Enter',
           },
         };
@@ -196,11 +195,8 @@
           // 迁移：findReplace / previewFind 不再作为独立快捷键项（与 find 是同一功能），清理残留。
           if (merged.findReplace) delete merged.findReplace;
           if (merged.previewFind) delete merged.previewFind;
-          // 迁移：fileSearch 现占用 Ctrl+P（VS Code Quick Open 风格），若用户旧配置仍把
-          // exportPDF 绑在 Ctrl+P（旧默认），将 exportPDF 迁到 Ctrl+Shift+P，避免二者冲突。
-          if (merged.fileSearch && merged.fileSearch.key === 'Ctrl+P' && merged.exportPDF && merged.exportPDF.key === 'Ctrl+P') {
-            merged.exportPDF = { ...merged.exportPDF, key: 'Ctrl+Shift+P' };
-          }
+          // 迁移：旧版本有 exportPDF 快捷项（已随 PDF 导出删除），清理残留。
+          if (merged.exportPDF) delete merged.exportPDF;
           return merged;
         } catch {
           return defaults;
@@ -385,7 +381,6 @@
           'btn-open': 'openFile',
           'btn-save': 'saveFile',
           'btn-save-as': 'saveAs',
-          'btn-export-pdf': 'exportPDF',
         };
         for (const [action, id] of Object.entries(map)) {
           const els = document.querySelectorAll(`[data-action="${action}"] .shortcut`);
@@ -408,7 +403,7 @@
         const groupLabels = this.t('shortcutGroup') || {};
         // 按功能分组展示，便于在长列表中查找
         const groups = [
-          { key: 'file', ids: ['newFile', 'openFile', 'saveFile', 'saveAs', 'closeTab', 'exportPDF', 'closeToTray'] },
+          { key: 'file', ids: ['newFile', 'openFile', 'saveFile', 'saveAs', 'closeTab', 'closeToTray'] },
           { key: 'search', ids: ['find', 'crossSearch', 'fileSearch'] },
           { key: 'tabView', ids: ['nextTab', 'prevTab', 'toggleView', 'toggleSidebar', 'toggleTheme'] },
           { key: 'format', ids: ['bold', 'italic', 'strikethrough', 'inlineCode', 'highlight', 'insertSuperscript', 'insertSubscript', 'moveLineUp', 'moveLineDown', 'insertLineBelow', 'insertLineAbove'] },
@@ -800,7 +795,6 @@
           openFile: () => this.openFile(),
           newFile: () => this.newFile(),
           closeTab: () => this.closeTab(this.activeTabIndex),
-          exportPDF: () => this.exportPDF(),
           saveAs: () => this.saveAsFile(),
           toggleView: () => this.toggleViewMode(),
           toggleSidebar: () => this.toggleSidebar(),

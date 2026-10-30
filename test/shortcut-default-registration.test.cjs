@@ -77,11 +77,10 @@ test('A2 default 方案：图片/代码块/删除线/行内代码/公式 采用 
 test('A3 default 与 typora 预设键位集合在 typora 覆盖项上完全一致', () => {
   const def = getDefaultShortcuts();
   const typora = getShortcutPresets().typora;
-  // fileSearch 在 typora 中显式置空（''），避免继承 default 的 Ctrl+P 与 typora 自身的
-  // exportPDF:'Ctrl+P' 冲突；exportPDF 在 default 中已迁到 Ctrl+Shift+P，typora 仍保留
-  // 其 Ctrl+P 打印键位（typora 方案语义）。二者均为有意差异，跳过。
+  // fileSearch 在 typora 中显式置空（''），避免继承 default 的 Ctrl+P（typora 方案语义）。
+  // 二者均为有意差异，跳过。
   for (const [aid, k] of Object.entries(typora)) {
-    if (aid === 'fileSearch' || aid === 'exportPDF') continue;
+    if (aid === 'fileSearch') continue;
     assert.strictEqual(def[aid].key, k, 'default 的 ' + aid + ' 应与 typora 一致（=' + k + '）');
   }
 });
@@ -128,11 +127,10 @@ test('A7 applyShortcutScheme(vscode) 后 toggleSidebar 生效、bold 清空、la
   assert.strictEqual(saved.length, 1, '应落盘一次');
 });
 
-test('A8 default 方案（合并自 PR #36）：fileSearch 绑定 Ctrl+P（VS Code Quick Open），原 exportPDF 迁到 Ctrl+Shift+P 不再冲突', () => {
+test('A8 default 方案（合并自 PR #36）：fileSearch 绑定 Ctrl+P（VS Code Quick Open）', () => {
   const def = getDefaultShortcuts();
   assert.strictEqual(def.fileSearch.key, 'Ctrl+P', '文件搜索应为 VS Code 风格 Ctrl+P');
-  assert.strictEqual(def.exportPDF.key, 'Ctrl+Shift+P', '导出 PDF 让出 Ctrl+P，迁到 Ctrl+Shift+P');
-  assert.notStrictEqual(def.fileSearch.key, def.exportPDF.key, '二者键位不得冲突');
+  assert.strictEqual(def.exportPDF, undefined, '导出 PDF 已删除，默认键位表不应再含 exportPDF');
 });
 
 test('A9 default 方案（合并自 PR #36）：moveLineUp/moveLineDown 默认 Alt+Up/Alt+Down，previewPaneWidth 默认 360', () => {
@@ -155,11 +153,11 @@ test('A11 default 方案与 vscode/typora/sublime 预设：insertLineBelow=Ctrl+
   }
 });
 
-test('A10 预设键位无冲突：vscode fileSearch=Ctrl+P；typora/sublime 显式 fileSearch:"" 避免继承 Ctrl+P 与自身 exportPDF 冲突', () => {
+test('A10 预设键位无冲突：vscode fileSearch=Ctrl+P；typora/sublime 显式 fileSearch:"" 避免继承 Ctrl+P', () => {
   const presets = getShortcutPresets();
   assert.strictEqual(presets.vscode.fileSearch, 'Ctrl+P', 'vscode 文件搜索=Ctrl+P');
-  assert.strictEqual(presets.typora.fileSearch, '', 'typora 显式置空 fileSearch，避免与 exportPDF:Ctrl+P 冲突');
-  assert.strictEqual(presets.sublime.fileSearch, '', 'sublime 显式置空 fileSearch，避免与 exportPDF:Ctrl+P 冲突');
+  assert.strictEqual(presets.typora.fileSearch, '', 'typora 显式置空 fileSearch');
+  assert.strictEqual(presets.sublime.fileSearch, '', 'sublime 显式置空 fileSearch');
   // 各预设内部不得出现两个 action 共用同一非空键
   for (const [name, preset] of Object.entries(presets)) {
     const seen = {};

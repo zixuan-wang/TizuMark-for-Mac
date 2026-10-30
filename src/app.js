@@ -233,7 +233,6 @@ class MarkdownEditor {
     this._bindMenuAction('btn-reload-menu', () => this.reloadFile(), F);
     this._bindMenuAction('btn-export-html', () => this.exportHTML(), F);
     this._bindMenuAction('btn-export-img', () => this.exportImage(), F);
-    this._bindMenuAction('btn-export-pdf', () => this.exportPDF(), F);
     this._bindMenuAction('btn-export-word', () => this.exportWord(), F);
     this._bindMenuAction('btn-settings', () => this.showSettings(), F);
     this._bindMenuAction('btn-theme', () => this.toggleTheme());

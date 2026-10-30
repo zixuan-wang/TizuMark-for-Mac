@@ -129,17 +129,6 @@ test('exportHTML: 代码块背景取自主题 --code-bg（与阅读模式同源�
   });
 });
 
-test('exportPDF: 主路径打印态展开所有滚动容器（与长图/DOCX 同口径，代码不裁切）', async () => {
-  // 2026-10-26：回退打印帧已删除，主路径在当前文档打印。pre 换行 / .code-line 行结构
-  // 由 styles.css（本文件其他用例守护）天然生效；导出侧必须额外注入展开规则，
-  // 否则「代码块滚动条」设置开着时代码块仍按 300px 裁切、只印一屏。
-  const src = fs.readFileSync(pathMod.join(__dirname, '../src/modules/export.js'), 'utf8');
-  const a = src.indexOf('async exportPDF() {');
-  assert.ok(a > 0, 'exportPDF 缺失');
-  const body = src.slice(a, src.indexOf('async _preparePdfClone', a));
-  assert.ok(body.includes("this._exportExpandRules('#pdf-print-root')"),
-    'exportPDF 未注入 #pdf-print-root 作用域的展开规则（超 300px 的代码会被裁掉）');
-});
 test('styles.css: .hljs 元素背景透明——统一用 pre 的 --code-bg（修复"内白外灰"）', async () => {
   // 根因：hljs 主题（github.css）里 .hljs 元素带 background:#ffffff；
   // pre 内是 display:block + padding:1em，会在 pre 的 var(--code-bg) 灰色之上叠一层白底，
@@ -158,20 +147,3 @@ test('styles.css: .hljs 元素背景透明——统一用 pre 的 --code-bg（�
   );
 });
 
-test('exportPDF: 打印帧组帧只准出现在能力回退分支（主路径在当前文档打印）', async () => {
-  // 主路径在当前文档打印（同一份 styles.css，.hljs 透明规则天然生效）；系统打印组帧
-  // 只准给「UA 判定不支持 PrintToPdf」的极旧运行时——catch 里 _exportViaSystemPrint
-  // 必须位于 else（不 capable）分支，capable 分支失败只能报错。
-  const src = fs.readFileSync(pathMod.join(__dirname, '../src/modules/export.js'), 'utf8');
-  const a = src.indexOf('async exportPDF() {');
-  const body = src.slice(a, src.indexOf('async _preparePdfClone', a));
-  const catchStart = body.indexOf('} catch (e) {');
-  const elseStart = body.indexOf('} else {', catchStart);
-  const finStart = body.indexOf('} finally {', catchStart);
-  assert.ok(catchStart > 0 && elseStart > catchStart && finStart > elseStart, 'catch/else/finally 结构缺失');
-  const capableBranch = body.slice(catchStart, elseStart);
-  const fallbackBranch = body.slice(elseStart, finStart);
-  assert.ok(!/_exportViaSystemPrint|_buildPdfPrintFrameHtml/.test(capableBranch),
-    'capable 分支不得回退系统打印（PDF 被占用等失败只准报错）');
-  assert.match(fallbackBranch, /_exportViaSystemPrint\(/, '不 capable 分支缺系统打印回退');
-});

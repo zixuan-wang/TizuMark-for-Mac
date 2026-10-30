@@ -67,15 +67,6 @@ test('S88 长图：exportImage 注入作用域展开 CSS + 宽度兜底 + data:U
     'exportImage finally 未清理展开样式/导出副本（会残留作用域 CSS 与离屏 DOM）');
 });
 
-test('S88 PDF：printCSS 使用公共展开口径（宽表/公式不再裁切）', () => {
-  assert.ok(EXPORT_SRC.includes('${this._exportExpandRules(\'.preview-content\')}'),
-    'PDF printCSS 未走公共展开口径（打印帧载入完整 styles.css，必须覆盖渲染态滚动规则）');
-  // 旧的去重行应已收口（不再单独手写 code-scroll 展开，避免双份口径）
-  const printSection = EXPORT_SRC.slice(EXPORT_SRC.indexOf('const printCSS'));
-  assert.ok(!printSection.includes('.code-scroll { max-height: none !important; overflow: visible !important; }'),
-    'printCSS 残留手写的 code-scroll 展开行（应只保留 _exportExpandRules 一份）');
-});
-
 test('S88 HTML/DOCX：_documentExportCSS 公式/图表容器解除横向裁切 + 单元格断词', () => {
   assert.match(EXPORT_SRC, /\.math-display \{ display: block; text-align: center; margin: 16px 0; overflow: visible; \}/,
     '_documentExportCSS 的 .math-display 仍 overflow-x:auto（宽公式导出裁切）');

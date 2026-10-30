@@ -53,7 +53,6 @@
         updateMenuText('btn-save-as', t('saveAs'));
         updateMenuText('btn-export-html', t('exportHTML'));
         updateMenuText('btn-export-img', t('exportImg'));
-        updateMenuText('btn-export-pdf', t('exportPDF'));
         updateMenuText('btn-export-word', t('exportWord'));
         updateMenuText('btn-shortcuts', t('shortcuts'));
         updateMenuText('btn-settings', t('settings'));

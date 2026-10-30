@@ -1,7 +1,8 @@
 // P2-1（2026-08-01 审查修复）：版本号一致性校验。
-// 以 package.json 的 version 为基准，校验其余 9 处发布相关版本号是否同步，
-// 防止改版本时漏改导致（如）更新 JSON 与安装包 tag 不一致的发布事故。
+// 以 package.json 的 version 为基准，校验其余发布相关版本号是否同步，
+// 防止改版本时漏改导致显示/文档版本不一致。
 // 接入 npm run check（npm run check 聚合脚本链）。
+// macOS 纯化（2026-10-30）：update json 与 release-notes.js 校验随 Windows 发布链删除而移除。
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,19 +41,10 @@ checkVersion('src/index.html', /id="about-version"[^>]*>TizuMark v([^<]+)</, { l
 checkVersion('README.md', /Version-([0-9.]+)-blue/, { label: 'README.md badge' });
 checkVersion('README.en.md', /Version-([0-9.]+)-blue/, { label: 'README.en.md badge' });
 checkVersion('README.es.md', /Version-([0-9.]+)-blue/, { label: 'README.es.md badge' });
-// release-notes.js 运行时从 package.json 读取版本（const VERSION = readPkg().version），恒与基准一致，仅校验存在性
-{
-  const rnPath = path.join(ROOT, 'scripts/release-notes.js');
-  const rnContent = fs.readFileSync(rnPath, 'utf8');
-  if (!/const VERSION\s*=\s*readPkg\(\)\.version/.test(rnContent)) {
-    fail.push('scripts/release-notes.js: 未从 package.json 读取 VERSION（应 const VERSION = readPkg().version）');
-  }
-}
-checkVersion('update-windows-x86_64.json', /"version"\s*:\s*"([^"]+)"/, { label: 'update json' });
 
 if (fail.length > 0) {
   console.error(`✗ 版本号一致性检查失败（基准 package.json version=${VERSION}）：`);
   for (const f of fail) console.error('  - ' + f);
   process.exit(1);
 }
-console.log(`✓ 版本号一致：v${VERSION}（9 处检查通过）`);
+console.log(`✓ 版本号一致：v${VERSION}（7 处检查通过）`);

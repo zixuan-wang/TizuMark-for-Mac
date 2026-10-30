@@ -1,10 +1,5 @@
-# 统一行尾为 LF，消除 Windows autocrlf=true 导致的 CRLF/LF 转换问题
+# 统一行尾为 LF
 * text=auto eol=lf
-
-# Windows 批处理脚本必须使用 CRLF
-*.bat text eol=crlf
-*.cmd text eol=crlf
-*.ps1 text eol=crlf
 
 # 二进制文件 - 不做行尾转换
 *.png binary
@@ -19,16 +14,10 @@
 *.ttf binary
 *.eot binary
 *.otf binary
-*.exe binary
-*.msi binary
-*.sig binary
-*.dll binary
-*.lib binary
 *.so binary
 *.dylib binary
 *.o binary
 *.a binary
 *.rlib binary
 *.rmeta binary
-*.pdb binary
 *.d binary

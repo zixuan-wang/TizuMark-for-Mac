@@ -32,17 +32,6 @@ fn open_devtools(app_handle: tauri::AppHandle) {
     }
 }
 
-#[tauri::command]
-fn get_cli_args() -> Vec<String> {
-    std::env::args().skip(1).collect()
-}
-
-// 从单实例回调的完整 argv 中取出待打开文件：跳过 argv[0]（可执行文件路径本身）。
-// 与 get_cli_args（std::env::args().skip(1)）保持一致，避免把 exe 路径当文件打开。
-fn files_from_args(argv: Vec<String>) -> Vec<String> {
-    argv.into_iter().skip(1).collect()
-}
-
 // 前端同步窗口行为偏好：更新内存状态，并按需切换托盘图标可见性。
 #[tauri::command]
 fn set_window_behavior(show_tray: bool, app: tauri::AppHandle) {
@@ -1197,14 +1186,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                show_window(&window);
-                // files_from_args 滤掉 argv[0]（第二实例 exe 自身路径），
-                // 避免前端误把 exe 当文件打开；与 get_cli_args 的 skip(1) 对齐
-                let _ = app.emit("file-open", files_from_args(argv));
-            }
-        }))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
@@ -1242,7 +1223,6 @@ pub fn run() {
         .manage(GlobalShortcutState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             open_devtools,
-            get_cli_args,
             set_window_behavior,
             set_close_to_tray_shortcut,
             quit_app,
@@ -1435,16 +1415,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_files_from_args_skips_exe() {
-        let argv = vec![
-            "C:\\Program Files\\TizuMark\\TizuMark.exe".to_string(),
-            "D:\\docs\\note.md".to_string(),
-        ];
-        let files = files_from_args(argv);
-        assert_eq!(files, vec!["D:\\docs\\note.md".to_string()]);
-    }
-
-    #[test]
     fn test_is_directory_distinguishes_dir_and_file() {
         let tmp = std::env::temp_dir().join("tizumark_isdir_test");
         let _ = fs::remove_dir_all(&tmp);
@@ -1455,12 +1425,6 @@ mod tests {
         assert!(!is_directory(file.to_string_lossy().to_string()));
         assert!(!is_directory("Z:\\definitely\\not\\exists".to_string()));
         let _ = fs::remove_dir_all(&tmp);
-    }
-
-    #[test]
-    fn test_files_from_args_empty_when_only_exe() {
-        let argv = vec!["TizuMark.exe".to_string()];
-        assert!(files_from_args(argv).is_empty());
     }
 
     #[test]

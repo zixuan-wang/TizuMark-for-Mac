@@ -22,16 +22,11 @@ tauri-plugin-single-instance = "2"
 # 「关闭到托盘」OS 级全局热键：窗口隐藏到托盘后前端 keydown 收不到按键，只能靠
 # 系统级热键唤回窗口（见 lib.rs set_close_to_tray_shortcut / toggle_main_window）
 tauri-plugin-global-shortcut = "2"
-tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
 notify = "6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-dirs = "6"
 reqwest = { version = "0.12", features = ["rustls-tls", "stream"] }
-futures-util = { version = "0.3", default-features = false, features = ["std"] }
-# 更新安装包 minisign 签名校验（与 tauri-plugin-updater 同一 crate/同一口径）
-minisign-verify = "0.2"
 base64 = "0.22"
 md-5 = "0.10"
 imagesize = "0.13"

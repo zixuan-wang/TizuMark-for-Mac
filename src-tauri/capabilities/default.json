@@ -27,7 +27,6 @@
       "identifier": "shell:allow-open",
       "allow": [{ "path": "**" }]
     },
-    "updater:default",
     "global-shortcut:default"
   ]
 }

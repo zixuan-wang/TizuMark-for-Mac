@@ -29,15 +29,6 @@
       "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob: http: https:; font-src 'self' data: blob:; media-src 'self' blob: https: data:; frame-src 'self'; connect-src 'self' ipc: tauri: blob: http: https:; worker-src 'self' blob:;"
     }
   },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://gitee.com/tizu/TizuMark-Markdown-Editor/raw/master/update-windows-x86_64.json",
-        "https://github.com/tizuio/TizuMark-Markdown-Editor/releases/latest/download/update-windows-x86_64.json"
-      ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE5OUJDOEQwRTc3MzVCNjUKUldSbFczUG4wTWlicVppTUk2QW5oY1RxR0hrUzJKMGZyeE1Ta20rOWVCbWVEejdEOWx1K3ppcWgK"
-    }
-  },
   "bundle": {
     "active": true,
     "targets": "all",

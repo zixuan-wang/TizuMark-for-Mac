@@ -39,7 +39,7 @@ test('COMMANDS 集合 == lib.rs generate_handler! 注册集合（C17，前后端
   assert.deepEqual(names, expected,
     `前后端命令集合必须一致。差异：${JSON.stringify(names)} vs ${JSON.stringify(expected)}`);
   // 数量守卫：防止无意中增删命令而忘记同步另一端（新增命令时同步更新此数）
-  assert.equal(expected.length, 32, '应有 32 个自定义命令');
+  assert.equal(expected.length, 27, '应有 27 个自定义命令');
 });
 
 test('generate_handler! 解析失败必须显式抛错（N27）', () => {
@@ -66,7 +66,7 @@ test('自定义命令方法由 COMMANDS 生成并原样透传（C5/N29）', asyn
   }
 });
 
-test('plugin 命令透传：dialog / webview / updater（N32，属 core.invoke 收敛）', async () => {
+test('plugin 命令透传：dialog / webview（N32，属 core.invoke 收敛）', async () => {
   const calls = [];
   global.window = {
     __TAURI__: { core: { invoke: async (cmd, args) => { calls.push({ cmd, args }); return 'ok'; } } },
@@ -78,15 +78,6 @@ test('plugin 命令透传：dialog / webview / updater（N32，属 core.invoke �
 
     await TauriApi.toggleDevtools();
     assert.equal(calls[calls.length - 1].cmd, 'plugin:webview|internal_toggle_devtools');
-
-    await TauriApi.updater.check();
-    assert.equal(calls[calls.length - 1].cmd, 'plugin:updater|check');
-
-    await TauriApi.updater.download({ rid: 1, onEvent: {} });
-    assert.equal(calls[calls.length - 1].cmd, 'plugin:updater|download');
-
-    await TauriApi.updater.install({ updateRid: 1, bytesRid: 2 });
-    assert.equal(calls[calls.length - 1].cmd, 'plugin:updater|install');
   } finally {
     delete global.window;
   }

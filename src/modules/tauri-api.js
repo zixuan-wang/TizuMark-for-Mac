@@ -2,7 +2,7 @@
  * tauri-api.js —— 统一 IPC 边界（ADR-1 / N11 / N21 / N29）
  *
  * 设计要点（任何偏离都会破坏方案硬约束，勿擅自改动）：
- *  - COMMANDS 是 31 个自定义命令的【唯一真源】；方法由其生成。契约测试反解析
+ *  - COMMANDS 是 27 个自定义命令的【唯一真源】；方法由其生成。契约测试反解析
  *    src-tauri/src/lib.rs 的 generate_handler! 块校验集合一致（C17）。
  *  - 延迟求值：调用时才读取 window.__TAURI__.core.invoke（根治 app.js:1 白屏单点，N4）。
  *  - 语义空操作（硬约束 N21）：resolve 原样返回，reject 原样抛出；
@@ -21,15 +21,11 @@
     'list_dir', 'search_files', 'ensure_dir', 'app_data_dir', 'list_system_fonts', 'read_bundled_file',
     'read_bundled_image_as_base64', 'fetch_image_as_base64', 'save_image_to_assets',
     'watch_folder', 'stop_watch', 'search_in_files', 'generate_toc',
-    'get_cli_args', 'quit_app', 'open_devtools', 'set_window_behavior',
+    'quit_app', 'open_devtools', 'set_window_behavior',
     'set_close_to_tray_shortcut',
     'reveal_in_folder',
     // 文件树右键操作（合并自 PR #36）：重命名 / 删除 / 复制 / 移动
     'rename_path', 'remove_path', 'copy_path', 'move_path',
-    // 更新安装包磁盘缓存：下载落盘（验签转正）/ 查缓存 / 从缓存安装
-    'download_update_to_file', 'find_cached_update', 'install_cached_update',
-    // PDF 导出：WebView2 PrintToPdf 直接落盘（绕开打印对话框与浏览器下载气泡）
-    'print_to_pdf',
   ];
 
   // 延迟求值：调用时才读取 invoke（根治白屏单点）
@@ -63,12 +59,6 @@
   api.dialogSave = function (options) { return invokeCmd('plugin:dialog|save', { options }); };
   // 注意：open_devtools 已是 COMMANDS 生成的自定义方法；webview 内部开关单独命名避免冲突
   api.toggleDevtools = function () { return invokeCmd('plugin:webview|internal_toggle_devtools'); };
-
-  api.updater = {
-    check() { return invokeCmd('plugin:updater|check'); },
-    download(payload) { return invokeCmd('plugin:updater|download', payload || {}); },
-    install(payload) { return invokeCmd('plugin:updater|install', payload || {}); },
-  };
 
   // P1-5：收敛非 core 命名空间（shell / event / app / window / path）到 TauriApi，
   // 全部带守卫——对应命名空间缺失时 no-op / 返回默认值，不改变既有 guarded 行为。

@@ -19,7 +19,9 @@
         "minWidth": 800,
         "minHeight": 600,
         "center": true,
-        "decorations": false,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
         "devtools": false,
         "visible": false,
         "backgroundColor": "#f5f5f5"
@@ -31,7 +33,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": "app",
     "resources": {
       "../demo.md": "demo.md",
       "../assets/icon.png": "assets/icon.png"
@@ -43,14 +45,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "windows": {
-      "nsis": {
-        "installerIcon": "icons/icon.ico",
-        "languages": ["SimpChinese", "English", "Spanish"],
-        "displayLanguageSelector": true,
-        "installMode": "currentUser"
-      }
-    },
     "fileAssociations": [
       {
         "ext": ["md", "markdown"],

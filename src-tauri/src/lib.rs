@@ -1113,8 +1113,23 @@ pub fn run() {
             copy_path,
             move_path
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            // Finder 双击 .md /「打开方式」:macOS 走 Apple Event(不产生新进程 argv),
+            // tauri 以 RunEvent::Opened 送达。复用前端既有的 file-open 监听
+            // (src/app.js 初始化时 TauriApi.onEvent('file-open', ...)),前端零改动。
+            if let tauri::RunEvent::Opened { urls } = event {
+                let paths: Vec<String> = urls
+                    .iter()
+                    .filter_map(|url| url.to_file_path().ok())
+                    .map(|p| p.to_string_lossy().to_string())
+                    .collect();
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.emit("file-open", paths);
+                }
+            }
+        });
 }
 
 #[cfg(test)]

@@ -117,7 +117,6 @@ class MarkdownEditor {
     this.applySplitterRatio();
     this.updatePreview();
     this.applyViewMode();
-    this.updateMaximizeIcon();
     this.updateWordCount();
     this.updateSideButtons();
     this.initBackendHealth();
@@ -198,7 +197,6 @@ class MarkdownEditor {
     this.initFileTreeDragEvents();  // files：文件树拖放移动（指针事件，规避 Tauri 原生 DnD 接管）
     this.initViewControls();        // layout
     this.initDialogDismiss();       // misc-ui
-    this.initWindowControls();      // updater
     this.initAppLifecycleEvents();  // 本文件
     // 全局键盘在捕获阶段统一派发，内部按优先级短路（见 _handleGlobalKeydown）
     document.addEventListener('keydown', (e) => this._handleGlobalKeydown(e), true);
@@ -255,8 +253,7 @@ class MarkdownEditor {
 
   initAppLifecycleEvents() {
     window.addEventListener('resize', () => {
-      this.updateMaximizeIcon();
-      this.updateSideButtons();
+        this.updateSideButtons();
     });
 
     // 应用退出时全量 revoke Blob URL，避免 WebView 存活期内泄漏（LRU 兜底外的一刀切）

@@ -76,26 +76,6 @@ test('tauri: EULA 已接受时对话框隐藏且初始化继续', async () => {
   } finally { cleanup(w); }
 });
 
-test('tauri: 窗口控制 minimize/toggleMaximize 调用对应窗口 API', async () => {
-  const { w, ed } = await makeEnv();
-  try {
-    const calls = [];
-    let maximized = false;
-    w.__TAURI__.window.getCurrentWindow = () => ({
-      minimize: async () => calls.push('minimize'),
-      maximize: async () => { calls.push('maximize'); maximized = true; },
-      unmaximize: async () => { calls.push('unmaximize'); maximized = false; },
-      isMaximized: async () => maximized,
-    });
-    await ed.minimizeWindow();
-    assert.deepStrictEqual(calls, ['minimize']);
-    await ed.toggleMaximize();
-    assert.ok(calls.includes('maximize'), '未最大化时应调用 maximize');
-    await ed.toggleMaximize();
-    assert.ok(calls.includes('unmaximize'), '已最大化时应调用 unmaximize');
-  } finally { cleanup(w); }
-});
-
 test('tauri: exportHTML 组装完整 HTML 并写文件', async () => {
   const calls = [];
   const { w, ed } = await makeEnv(async (cmd, args) => {

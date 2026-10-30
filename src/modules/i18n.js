@@ -70,11 +70,6 @@
         // Theme button
         setText('theme-text', this.isDark ? t('themeDark') : t('themeLight'));
   
-        // Window controls
-        setTitle('btn-minimize', t('minimize'));
-        setTitle('btn-maximize', t('maximize'));
-        setTitle('btn-close', t('close'));
-  
         // Status bar
         setText('status-text', t('ready'));
         document.getElementById('word-count').textContent = t('words') + ': 0';

@@ -48,6 +48,3 @@ winreg = "0.52"
 # 否则 ICoreWebView2* 接口类型不匹配，编译期就报 trait 不满足。
 webview2-com = "0.38"
 windows = { version = "0.61", features = ["Win32_Foundation"] }
-
-[patch.crates-io]
-brotli = { git = "https://github.com/dropbox/rust-brotli", rev = "9cbed81a1a098fcd4ffcf956429dce6154415970" }

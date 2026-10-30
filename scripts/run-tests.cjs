@@ -134,8 +134,8 @@ function isBrowserTest(file) {
 }
 
 function resolvePuppeteerModules() {
-  // 优先级：显式 env > 当前 NODE_PATH > 本机固定路径
-  return process.env.PUPPETEER_MODULES || process.env.NODE_PATH || 'C:/Users/admin/node_modules';
+  // 优先级：显式 env > 当前 NODE_PATH（macOS 无本机固定路径兜底）
+  return process.env.PUPPETEER_MODULES || process.env.NODE_PATH || '';
 }
 
 function waitForDevServer(timeoutMs) {

@@ -16,8 +16,9 @@ function loadPlaywright() {
   const candidates = [
     process.env.PLAYWRIGHT_MODULE,
     'playwright',
-    path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', 'playwright'),
-    'C:/Users/admin/AppData/Roaming/npm/node_modules/playwright',
+    '/opt/homebrew/lib/node_modules/playwright',
+    '/usr/local/lib/node_modules/playwright',
+    path.join(os.homedir(), '.npm-global', 'lib', 'node_modules', 'playwright'),
   ].filter(Boolean);
   for (const c of candidates) {
     try { return require(c); } catch (_) { /* 试下一个 */ }
@@ -31,11 +32,18 @@ const root = path.resolve(__dirname, '..');
 const url = pathToFileURL(path.join(root, '_slash_check.html')).href;
 
 function findChromium() {
-  const cacheRoot = path.join(os.homedir(), 'AppData', 'Local', 'ms-playwright');
+  // playwright 浏览器缓存(macOS):~/Library/Caches/ms-playwright/chromium-*/chrome-mac/...
+  const cacheRoot = path.join(os.homedir(), 'Library', 'Caches', 'ms-playwright');
   if (fs.existsSync(cacheRoot)) {
     for (const dir of fs.readdirSync(cacheRoot).filter(d => d.startsWith('chromium-')).sort().reverse()) {
-      const exe = path.join(cacheRoot, dir, 'chrome-win64', 'chrome.exe');
-      if (fs.existsSync(exe)) return exe;
+      for (const candidate of [
+        path.join(cacheRoot, dir, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+        path.join(cacheRoot, dir, 'chrome-mac', 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+        path.join(cacheRoot, dir, 'chrome-mac-arm64', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+        path.join(cacheRoot, dir, 'chrome-mac-arm64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
+      ]) {
+        if (fs.existsSync(candidate)) return candidate;
+      }
     }
   }
   return undefined;
@@ -67,8 +75,10 @@ try {
     [`页面无异常: ${JSON.stringify(errors)}`, errors.length === 0],
     [`底部输入：面板完整落在视口内（不被屏幕底裁掉）: ${JSON.stringify(bottom.panel)}`,
       bottom.visible === true],
-    [`底部输入：面板翻转到光标上方: ${JSON.stringify({ top: bottom.panel.top, curTop: bottom.coords && bottom.coords.top })}`,
-      !!bottom.coords && bottom.panel.top < bottom.coords.top],
+    // 文末有 50vh 底部留白（styles.css #editor-wrapper .CodeMirror-lines），面板常能放下；
+    // 回归目标改为「不遮挡光标行」——要么贴光标下方，要么翻到光标上方。
+    [`底部输入：面板不遮挡光标行（下方放得下则贴下方，否则翻上方）: ${JSON.stringify({ top: bottom.panel.top, curTop: bottom.coords && bottom.coords.top, curBottom: bottom.coords && bottom.coords.bottom })}`,
+      !!bottom.coords && (bottom.panel.top >= bottom.coords.bottom || bottom.panel.bottom <= bottom.coords.top)],
     [`中部输入：面板仍在光标下方（不回归）: ${JSON.stringify({ top: mid.panel.top, curBottom: mid.coords && mid.coords.bottom })}`,
       !!mid.coords && mid.panel.top > mid.coords.bottom && mid.panel.top - mid.coords.bottom <= 12],
     [`中部输入：面板可见: ${JSON.stringify(mid.panel)}`, mid.visible === true],

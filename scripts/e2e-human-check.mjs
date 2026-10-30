@@ -30,8 +30,9 @@ function loadPlaywright() {
   const candidates = [
     process.env.PLAYWRIGHT_MODULE,
     'playwright',
-    path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', 'playwright'),
-    'C:/Users/admin/AppData/Roaming/npm/node_modules/playwright',
+    '/opt/homebrew/lib/node_modules/playwright',
+    '/usr/local/lib/node_modules/playwright',
+    path.join(os.homedir(), '.npm-global', 'lib', 'node_modules', 'playwright'),
   ].filter(Boolean);
   for (const c of candidates) {
     try { return require(c); } catch (_) { /* 试下一个 */ }

@@ -16,8 +16,9 @@ function loadPlaywright() {
   const candidates = [
     process.env.PLAYWRIGHT_MODULE,
     'playwright',
-    path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', 'playwright'),
-    'C:/Users/admin/AppData/Roaming/npm/node_modules/playwright',
+    '/opt/homebrew/lib/node_modules/playwright',
+    '/usr/local/lib/node_modules/playwright',
+    path.join(os.homedir(), '.npm-global', 'lib', 'node_modules', 'playwright'),
   ].filter(Boolean);
   for (const c of candidates) {
     try { return require(c); } catch (_) { /* 试下一个 */ }
@@ -32,34 +33,34 @@ const url = pathToFileURL(path.join(root, '_wysiwyg_compare.html')).href;
 
 // 浏览器可执行文件：优先 playwright 自带；否则扫 ms-playwright 缓存（本机 chromium-1217）
 function findChromium() {
-  const cacheRoot = path.join(os.homedir(), 'AppData', 'Local', 'ms-playwright');
+  // playwright 浏览器缓存(macOS):~/Library/Caches/ms-playwright/chromium-*/chrome-mac/...
+  const cacheRoot = path.join(os.homedir(), 'Library', 'Caches', 'ms-playwright');
   if (fs.existsSync(cacheRoot)) {
     for (const dir of fs.readdirSync(cacheRoot).filter(d => d.startsWith('chromium-')).sort().reverse()) {
-      const exe = path.join(cacheRoot, dir, 'chrome-win64', 'chrome.exe');
-      if (fs.existsSync(exe)) return exe;
+      for (const candidate of [
+        path.join(cacheRoot, dir, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+        path.join(cacheRoot, dir, 'chrome-mac', 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+        path.join(cacheRoot, dir, 'chrome-mac-arm64', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+        path.join(cacheRoot, dir, 'chrome-mac-arm64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
+      ]) {
+        if (fs.existsSync(candidate)) return candidate;
+      }
     }
   }
   return undefined;
 }
-// 启动：⚠️ 必须用系统 Edge（channel:'msedge'）——app 真机是 WebView2（Edge 同版本引擎）。
-// 2026-10-15 黑点 1px 教训：disc marker 的绘制规则（基线锚定 0.906em）与 Playwright
-// Chromium（13x，几何中心 0.85em）不同，用自带 Chromium 校准的样式在真机差 1px
-//（用户截图复测才发现）。Edge 无前置校准意义时（CI 无 Edge）才回退自带 Chromium。
+// 启动：macOS 真机是 WKWebView，不存在「Edge 与 WebView2 同引擎」的校准前提，
+// 直接用 playwright 自带 Chromium；不可用时回退 ms-playwright 缓存中的可执行文件。
 let browser;
-let isEdgeDriver = false; // 真机 WebView2 同引擎 → 像素级断言可用（见 S51）
+const isEdgeDriver = false; // macOS 无 WebView2 校准前提 → 像素级 Edge 校准项不适用
 try {
-  browser = await pw.chromium.launch({ headless: true, channel: 'msedge' });
-  isEdgeDriver = true;
-  console.log('[driver] 浏览器: 系统 Edge（与 app WebView2 同引擎）');
+  browser = await pw.chromium.launch({ headless: true });
+  console.log('[driver] 浏览器: playwright 自带 Chromium（macOS）');
 } catch (e) {
-  try {
-    browser = await pw.chromium.launch({ headless: true });
-    console.log('[driver] 浏览器: playwright 自带 Chromium（Edge 不可用，真机校准项可能失真）');
-  } catch (e2) {
-    const exe = findChromium();
-    if (!exe) throw e2;
-    browser = await pw.chromium.launch({ headless: true, executablePath: exe });
-  }
+  const exe = findChromium();
+  if (!exe) throw e;
+  browser = await pw.chromium.launch({ headless: true, executablePath: exe });
+  console.log('[driver] 浏览器: ms-playwright 缓存 Chromium（' + exe + '）');
 }
 let fail = 0;
 // S94 共用：解析计算背景色（rgb()/rgba() 与 color(srgb r g b [a])——Edge 对 color-mix
@@ -2705,7 +2706,7 @@ try {
         !!setup && setup.lines === 10 && setup.len === 47 && setup.activeIdx === 1, JSON.stringify(setup));
       if (setup) {
         // ① Ctrl+A：模型选区必须覆盖全篇（含首块；修复前锚点被钳到首块末，42/47 字符）
-        await page.keyboard.press('Control+a');
+        await page.keyboard.press('Meta+a'); // macOS: ⌘A 全选（Control+A 在 CM5 mac keymap 是 goLineStart）
         await page.waitForTimeout(80);
         let sel = await page.evaluate(() => window.__s49sel());
         const r0 = (sel.ranges[0] || {});
@@ -2777,7 +2778,7 @@ try {
 
         // ⑤ 跨块选区上打字：Ctrl+A + 输入 → 整篇替换、遮罩干净重挂（atomic 标记随
         //    区间被消费而清除，250ms 防抖刷新按新块表重挂）
-        await page.keyboard.press('Control+a');
+        await page.keyboard.press('Meta+a'); // macOS: ⌘A 全选（Control+A 在 CM5 mac keymap 是 goLineStart）
         await page.waitForTimeout(50);
         await page.keyboard.type('X');
         await page.waitForTimeout(450);

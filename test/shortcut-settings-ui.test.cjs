@@ -267,7 +267,9 @@ test('显示：formatShortcutDisplay 方向键映射为直观符号', async () =
     const ed = w.editor;
     assert.match(ed.formatShortcutDisplay('Ctrl+ArrowLeft'), /←/, '← 符号');
     assert.match(ed.formatShortcutDisplay('Ctrl+ArrowRight'), /→/, '→ 符号');
-    assert.match(ed.formatShortcutDisplay('Ctrl+Home'), /Ctrl/, 'Home 保持文本 Ctrl');
+    const homeHtml = ed.formatShortcutDisplay('Ctrl+Home');
+    assert.match(homeHtml, /⌘/, 'Ctrl 显示为 ⌘（macOS）');
+    assert.match(homeHtml, /Home/, 'Home 保持文本');
   } finally {
     cleanup(w);
   }

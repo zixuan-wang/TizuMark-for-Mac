@@ -244,6 +244,7 @@
         if (!key) return `<span class="shortcut-key shortcut-key-empty">${this.t('none')}</span>`;
         // 方向键 / 功能键映射为更直观的符号，键位显示更紧凑美观
         const SYM = {
+          Ctrl: '⌘', Cmd: '⌘', Alt: '⌥', Shift: '⇧',
           ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓',
           Home: 'Home', End: 'End', Backspace: '⌫', Delete: '⌦',
           Enter: '↵', Space: 'Space', Escape: 'Esc', Tab: 'Tab',
@@ -257,56 +258,56 @@
       // 便于冲突校验直接比对；group 用于在内置区内再细分（nav=光标与选区 / edit=编辑通用）。
       getBuiltinFixedShortcuts() {
         const ZH = [
-          { combo: 'Ctrl+Home', group: 'nav', name: '跳到开头', desc: '把光标移到整篇文档的最前面' },
-          { combo: 'Ctrl+End', group: 'nav', name: '跳到结尾', desc: '把光标移到整篇文档的最后面' },
-          { combo: 'Shift+Ctrl+Home', group: 'nav', name: '选到开头', desc: '从光标位置一路选中到文档开头' },
-          { combo: 'Shift+Ctrl+End', group: 'nav', name: '选到结尾', desc: '从光标位置一路选中到文档结尾' },
-          { combo: 'Ctrl+ArrowLeft', group: 'nav', name: '按词左移', desc: '光标向左跳过一个完整的词' },
-          { combo: 'Ctrl+ArrowRight', group: 'nav', name: '按词右移', desc: '光标向右跳过一个完整的词' },
-          { combo: 'Shift+Ctrl+ArrowLeft', group: 'nav', name: '向左选词', desc: '按住 Shift，再向左按词选中文本' },
-          { combo: 'Shift+Ctrl+ArrowRight', group: 'nav', name: '向右选词', desc: '按住 Shift，再向右按词选中文本' },
-          { combo: 'Ctrl+Z', group: 'edit', name: '撤销', desc: '撤销上一步操作' },
-          { combo: 'Ctrl+Y', group: 'edit', name: '重做', desc: '恢复刚刚被撤销的操作' },
-          { combo: 'Ctrl+A', group: 'edit', name: '全选', desc: '选中编辑器里的全部内容' },
-          { combo: 'Ctrl+C', group: 'edit', name: '复制', desc: '把选中的文本复制到剪贴板' },
-          { combo: 'Ctrl+X', group: 'edit', name: '剪切', desc: '把选中的文本剪切到剪贴板' },
-          { combo: 'Ctrl+V', group: 'edit', name: '粘贴', desc: '在光标处粘贴剪贴板内容' },
+          { combo: 'Cmd+Home', group: 'nav', name: '跳到开头', desc: '把光标移到整篇文档的最前面' },
+          { combo: 'Cmd+End', group: 'nav', name: '跳到结尾', desc: '把光标移到整篇文档的最后面' },
+          { combo: 'Shift+Cmd+Home', group: 'nav', name: '选到开头', desc: '从光标位置一路选中到文档开头' },
+          { combo: 'Shift+Cmd+End', group: 'nav', name: '选到结尾', desc: '从光标位置一路选中到文档结尾' },
+          { combo: 'Cmd+ArrowLeft', group: 'nav', name: '按词左移', desc: '光标向左跳过一个完整的词' },
+          { combo: 'Cmd+ArrowRight', group: 'nav', name: '按词右移', desc: '光标向右跳过一个完整的词' },
+          { combo: 'Shift+Cmd+ArrowLeft', group: 'nav', name: '向左选词', desc: '按住 Shift，再向左按词选中文本' },
+          { combo: 'Shift+Cmd+ArrowRight', group: 'nav', name: '向右选词', desc: '按住 Shift，再向右按词选中文本' },
+          { combo: 'Cmd+Z', group: 'edit', name: '撤销', desc: '撤销上一步操作' },
+          { combo: 'Cmd+Y', group: 'edit', name: '重做', desc: '恢复刚刚被撤销的操作' },
+          { combo: 'Cmd+A', group: 'edit', name: '全选', desc: '选中编辑器里的全部内容' },
+          { combo: 'Cmd+C', group: 'edit', name: '复制', desc: '把选中的文本复制到剪贴板' },
+          { combo: 'Cmd+X', group: 'edit', name: '剪切', desc: '把选中的文本剪切到剪贴板' },
+          { combo: 'Cmd+V', group: 'edit', name: '粘贴', desc: '在光标处粘贴剪贴板内容' },
           { combo: 'Tab', group: 'edit', name: '增加缩进', desc: '为当前行或选中的多行增加一级缩进' },
           { combo: 'Shift+Tab', group: 'edit', name: '减少缩进', desc: '为当前行或选中的多行减少一级缩进' },
         ];
         const EN = [
-          { combo: 'Ctrl+Home', group: 'nav', name: 'Go to start', desc: 'Move the cursor to the very beginning of the document' },
-          { combo: 'Ctrl+End', group: 'nav', name: 'Go to end', desc: 'Move the cursor to the very end of the document' },
-          { combo: 'Shift+Ctrl+Home', group: 'nav', name: 'Select to start', desc: 'Select from the cursor all the way to the document start' },
-          { combo: 'Shift+Ctrl+End', group: 'nav', name: 'Select to end', desc: 'Select from the cursor all the way to the document end' },
-          { combo: 'Ctrl+ArrowLeft', group: 'nav', name: 'Word left', desc: 'Move the cursor left by one whole word' },
-          { combo: 'Ctrl+ArrowRight', group: 'nav', name: 'Word right', desc: 'Move the cursor right by one whole word' },
-          { combo: 'Shift+Ctrl+ArrowLeft', group: 'nav', name: 'Select word left', desc: 'Hold Shift to select words to the left' },
-          { combo: 'Shift+Ctrl+ArrowRight', group: 'nav', name: 'Select word right', desc: 'Hold Shift to select words to the right' },
-          { combo: 'Ctrl+Z', group: 'edit', name: 'Undo', desc: 'Undo the last action' },
-          { combo: 'Ctrl+Y', group: 'edit', name: 'Redo', desc: 'Redo the last undone action' },
-          { combo: 'Ctrl+A', group: 'edit', name: 'Select all', desc: 'Select everything in the editor' },
-          { combo: 'Ctrl+C', group: 'edit', name: 'Copy', desc: 'Copy the selected text to the clipboard' },
-          { combo: 'Ctrl+X', group: 'edit', name: 'Cut', desc: 'Cut the selected text to the clipboard' },
-          { combo: 'Ctrl+V', group: 'edit', name: 'Paste', desc: 'Paste clipboard content at the cursor' },
+          { combo: 'Cmd+Home', group: 'nav', name: 'Go to start', desc: 'Move the cursor to the very beginning of the document' },
+          { combo: 'Cmd+End', group: 'nav', name: 'Go to end', desc: 'Move the cursor to the very end of the document' },
+          { combo: 'Shift+Cmd+Home', group: 'nav', name: 'Select to start', desc: 'Select from the cursor all the way to the document start' },
+          { combo: 'Shift+Cmd+End', group: 'nav', name: 'Select to end', desc: 'Select from the cursor all the way to the document end' },
+          { combo: 'Cmd+ArrowLeft', group: 'nav', name: 'Word left', desc: 'Move the cursor left by one whole word' },
+          { combo: 'Cmd+ArrowRight', group: 'nav', name: 'Word right', desc: 'Move the cursor right by one whole word' },
+          { combo: 'Shift+Cmd+ArrowLeft', group: 'nav', name: 'Select word left', desc: 'Hold Shift to select words to the left' },
+          { combo: 'Shift+Cmd+ArrowRight', group: 'nav', name: 'Select word right', desc: 'Hold Shift to select words to the right' },
+          { combo: 'Cmd+Z', group: 'edit', name: 'Undo', desc: 'Undo the last action' },
+          { combo: 'Cmd+Y', group: 'edit', name: 'Redo', desc: 'Redo the last undone action' },
+          { combo: 'Cmd+A', group: 'edit', name: 'Select all', desc: 'Select everything in the editor' },
+          { combo: 'Cmd+C', group: 'edit', name: 'Copy', desc: 'Copy the selected text to the clipboard' },
+          { combo: 'Cmd+X', group: 'edit', name: 'Cut', desc: 'Cut the selected text to the clipboard' },
+          { combo: 'Cmd+V', group: 'edit', name: 'Paste', desc: 'Paste clipboard content at the cursor' },
           { combo: 'Tab', group: 'edit', name: 'Indent', desc: 'Add one level of indent to the line or selection' },
           { combo: 'Shift+Tab', group: 'edit', name: 'Outdent', desc: 'Remove one level of indent from the line or selection' },
         ];
         const ES = [
-          { combo: 'Ctrl+Home', group: 'nav', name: 'Ir al inicio', desc: 'Mueve el cursor al principio del documento' },
-          { combo: 'Ctrl+End', group: 'nav', name: 'Ir al final', desc: 'Mueve el cursor al final del documento' },
-          { combo: 'Shift+Ctrl+Home', group: 'nav', name: 'Seleccionar al inicio', desc: 'Selecciona desde el cursor hasta el inicio del documento' },
-          { combo: 'Shift+Ctrl+End', group: 'nav', name: 'Seleccionar al final', desc: 'Selecciona desde el cursor hasta el final del documento' },
-          { combo: 'Ctrl+ArrowLeft', group: 'nav', name: 'Palabra a la izquierda', desc: 'Mueve el cursor una palabra completa a la izquierda' },
-          { combo: 'Ctrl+ArrowRight', group: 'nav', name: 'Palabra a la derecha', desc: 'Mueve el cursor una palabra completa a la derecha' },
-          { combo: 'Shift+Ctrl+ArrowLeft', group: 'nav', name: 'Seleccionar palabra izq.', desc: 'Mantiene Shift para seleccionar palabras hacia la izquierda' },
-          { combo: 'Shift+Ctrl+ArrowRight', group: 'nav', name: 'Seleccionar palabra der.', desc: 'Mantiene Shift para seleccionar palabras hacia la derecha' },
-          { combo: 'Ctrl+Z', group: 'edit', name: 'Deshacer', desc: 'Deshace la última acción' },
-          { combo: 'Ctrl+Y', group: 'edit', name: 'Rehacer', desc: 'Rehace la última acción deshecha' },
-          { combo: 'Ctrl+A', group: 'edit', name: 'Seleccionar todo', desc: 'Selecciona todo el contenido del editor' },
-          { combo: 'Ctrl+C', group: 'edit', name: 'Copiar', desc: 'Copia el texto seleccionado al portapapeles' },
-          { combo: 'Ctrl+X', group: 'edit', name: 'Cortar', desc: 'Corta el texto seleccionado al portapapeles' },
-          { combo: 'Ctrl+V', group: 'edit', name: 'Pegar', desc: 'Pega el contenido del portapapeles en la posición del cursor' },
+          { combo: 'Cmd+Home', group: 'nav', name: 'Ir al inicio', desc: 'Mueve el cursor al principio del documento' },
+          { combo: 'Cmd+End', group: 'nav', name: 'Ir al final', desc: 'Mueve el cursor al final del documento' },
+          { combo: 'Shift+Cmd+Home', group: 'nav', name: 'Seleccionar al inicio', desc: 'Selecciona desde el cursor hasta el inicio del documento' },
+          { combo: 'Shift+Cmd+End', group: 'nav', name: 'Seleccionar al final', desc: 'Selecciona desde el cursor hasta el final del documento' },
+          { combo: 'Cmd+ArrowLeft', group: 'nav', name: 'Palabra a la izquierda', desc: 'Mueve el cursor una palabra completa a la izquierda' },
+          { combo: 'Cmd+ArrowRight', group: 'nav', name: 'Palabra a la derecha', desc: 'Mueve el cursor una palabra completa a la derecha' },
+          { combo: 'Shift+Cmd+ArrowLeft', group: 'nav', name: 'Seleccionar palabra izq.', desc: 'Mantiene Shift para seleccionar palabras hacia la izquierda' },
+          { combo: 'Shift+Cmd+ArrowRight', group: 'nav', name: 'Seleccionar palabra der.', desc: 'Mantiene Shift para seleccionar palabras hacia la derecha' },
+          { combo: 'Cmd+Z', group: 'edit', name: 'Deshacer', desc: 'Deshace la última acción' },
+          { combo: 'Cmd+Y', group: 'edit', name: 'Rehacer', desc: 'Rehace la última acción deshecha' },
+          { combo: 'Cmd+A', group: 'edit', name: 'Seleccionar todo', desc: 'Selecciona todo el contenido del editor' },
+          { combo: 'Cmd+C', group: 'edit', name: 'Copiar', desc: 'Copia el texto seleccionado al portapapeles' },
+          { combo: 'Cmd+X', group: 'edit', name: 'Cortar', desc: 'Corta el texto seleccionado al portapapeles' },
+          { combo: 'Cmd+V', group: 'edit', name: 'Pegar', desc: 'Pega el contenido del portapapeles en la posición del cursor' },
           { combo: 'Tab', group: 'edit', name: 'Aumentar sangría', desc: 'Añade un nivel de sangría a la línea o selección' },
           { combo: 'Shift+Tab', group: 'edit', name: 'Reducir sangría', desc: 'Reduce un nivel de sangría a la línea o selección' },
         ];
@@ -321,10 +322,9 @@
         let main = '';
         for (const p of key.split('+')) {
           const up = p.trim().toLowerCase();
-          if (up === 'ctrl' || up === 'control') mods.push('ctrl');
+          if (up === 'ctrl' || up === 'control' || up === 'meta' || up === 'cmd') mods.push('meta');
           else if (up === 'shift') mods.push('shift');
           else if (up === 'alt') mods.push('alt');
-          else if (up === 'meta' || up === 'cmd') mods.push('meta');
           else main = up;
         }
         return [...mods.sort(), main].join('+');
@@ -337,6 +337,11 @@
           if (this._normalizeShortcutKey(item.combo) === norm) return item;
         }
         return null;
+      },
+      // 菜单内快捷键提示的纯文本形式（与 formatShortcutDisplay 的符号一致）
+      _shortcutDisplayText(key) {
+        if (!key) return '';
+        return key.split('+').map((k) => ({ Ctrl: '⌘', Cmd: '⌘', Alt: '⌥', Shift: '⇧' })[k] || k).join('');
       },
       updateShortcutHints() {
         const s = this.shortcuts;
@@ -386,7 +391,7 @@
           const els = document.querySelectorAll(`[data-action="${action}"] .shortcut`);
           const key = s[id]?.key;
           for (const el of els) {
-            el.textContent = key || '';
+            el.textContent = this._shortcutDisplayText(key);
           }
         }
         for (const [elId, id] of Object.entries(idMap)) {
@@ -394,7 +399,7 @@
           if (!el) continue;
           const span = el.querySelector('.shortcut');
           if (!span) continue;
-          span.textContent = s[id]?.key || '';
+          span.textContent = this._shortcutDisplayText(s[id]?.key);
         }
       },
       renderShortcutsList() {
@@ -974,8 +979,11 @@
 
     // 同步「关闭到托盘」全局热键到 Rust（OS 级：窗口隐藏后仍能唤出/隐藏）
     async _syncGlobalCloseToTrayShortcut(key) {
+      // macOS 全局热键：内部 token 'Ctrl' 语义即 ⌘，注册 OS 级热键时必须换 'Cmd'，
+      // 否则注册成真 Control 组合键（与用户按下的 ⌘ 不符）。
+      const osKey = (key || '').replace(/^Ctrl(?=\+|$)/, 'Cmd');
       try {
-        await TauriApi.setCloseToTrayShortcut({ key: key || '' });
+        await TauriApi.setCloseToTrayShortcut({ key: osKey });
       } catch (err) {
         console.warn('全局热键注册失败（该组合键可能已被其他程序占用）:', key, err);
       }

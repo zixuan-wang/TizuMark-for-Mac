@@ -196,10 +196,6 @@
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
                 <span>使用说明</span>
               </div>
-              <div class="dropdown-item" id="btn-check-update">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                <span>检查更新</span>
-              </div>
               <div class="dropdown-separator"></div>
               <div class="dropdown-item" id="btn-devtools">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -708,55 +704,6 @@
       </div>
       <div class="dialog-footer">
         <button id="eula-accept" class="dialog-btn dialog-btn-primary">我知道了 / I Understand</button>
-      </div>
-      <div class="dialog-resize-handle" aria-hidden="true"></div>
-    </div>
-  </div>
-
-  <!-- 更新对话框 -->
-  <div id="update-dialog" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="update-title">
-    <div class="dialog update-dialog">
-      <div class="dialog-header">
-        <h2 id="update-title">发现新版本</h2>
-        <button class="dialog-close" id="update-close" aria-label="关闭">&times;</button>
-      </div>
-      <div class="dialog-content">
-        <div id="update-state-checking">
-          <p id="update-state-checking-text">正在检查更新...</p>
-        </div>
-        <div id="update-state-available" class="hidden">
-          <p>TizuMark <span id="update-new-version" class="update-version-highlight"></span> <span id="update-available-suffix">可用</span></p>
-          <p class="update-current"><span id="update-current-version-label">当前版本: </span><span id="update-current-version"></span></p>
-          <div class="update-notes">
-            <h4 id="update-notes-title">更新内容</h4>
-            <div id="update-notes-body" class="preview-content"></div>
-          </div>
-          <div class="update-progress hidden" id="update-progress-wrap">
-            <div class="progress-bar"><div class="progress-fill" id="update-progress-fill"></div></div>
-            <span id="update-progress-text">0%</span>
-          </div>
-        </div>
-        <div id="update-state-downloaded" class="hidden">
-          <p>TizuMark <span id="update-dl-version" class="update-version-highlight"></span> <span id="update-dl-suffix">安装包已下载</span></p>
-          <p class="update-current" id="update-dl-info"></p>
-        </div>
-        <div id="update-state-latest" class="hidden">
-          <div class="update-latest-card">
-            <div class="update-latest-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M8 12.5l2.5 2.5L16 9"></path>
-              </svg>
-            </div>
-            <h3 class="update-latest-title" id="update-latest-title">已是最新版本</h3>
-            <p class="update-latest-sub"><span id="update-latest-prefix">当前已是最新版本</span> <span id="update-latest-version" class="update-version-highlight"></span><span id="update-latest-suffix">，无需更新</span></p>
-          </div>
-        </div>
-      </div>
-      <div class="dialog-footer">
-        <button class="dialog-btn" id="update-skip">稍后再说</button>
-        <button class="dialog-btn" id="update-skip-version">跳过此版本</button>
-        <button class="dialog-btn dialog-btn-primary" id="update-action" data-state="" disabled>正在检查...</button>
       </div>
       <div class="dialog-resize-handle" aria-hidden="true"></div>
     </div>

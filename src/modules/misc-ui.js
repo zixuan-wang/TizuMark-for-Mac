@@ -731,19 +731,12 @@
         this.hideAllContextMenus();
       });
     },
-    // 关于/更新对话框关闭与外链徽章
+    // 关于对话框关闭与外链徽章
     initDialogDismiss() {
       document.getElementById('about-close').addEventListener('click', () => this.hideAbout());
       document.getElementById('about-dialog').addEventListener('click', (e) => {
         if (e.target.id === 'about-dialog') this.hideAbout();
       });
-      document.getElementById('update-close').addEventListener('click', () => this.hideUpdateDialog());
-      document.getElementById('update-dialog').addEventListener('click', (e) => {
-        if (e.target.id === 'update-dialog') this.hideUpdateDialog();
-      });
-      document.getElementById('update-action').addEventListener('click', () => this.handleUpdateAction());
-      document.getElementById('update-skip').addEventListener('click', () => this.hideUpdateDialog());
-      document.getElementById('update-skip-version').addEventListener('click', () => this.skipUpdateVersion());
       document.getElementById('gitee-badge').addEventListener('click', () => {
         const url = document.getElementById('gitee-badge').dataset.url;
         if (url) this.openExternal(url);

@@ -250,9 +250,6 @@ const tauriMockScript = `
       case 'open_devtools': return null;
       case 'set_window_behavior': return null;
       case 'set_close_to_tray_shortcut': return null;
-      case 'download_update_to_file': return DATA_DIR + '/update-setup.exe';
-      case 'find_cached_update': return null;
-      case 'install_cached_update': return null;
       case 'fetch_image_as_base64': return '';
       case 'read_bundled_image_as_base64': return '';
       case 'save_image_to_assets': return WS + '/assets/image-1.png';
@@ -273,9 +270,6 @@ const tauriMockScript = `
       }
       case 'plugin:dialog|open': return dialogs.open();
       case 'plugin:dialog|save': return dialogs.save();
-      case 'plugin:updater|check': return null;
-      case 'plugin:updater|download': return null;
-      case 'plugin:updater|install': return null;
       case 'plugin:webview|internal_toggle_devtools': return null;
       default:
         console.warn('[tauri-mock] 未路由的 invoke: ' + cmd);

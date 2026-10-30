@@ -31,9 +31,6 @@
           extendedSyntax: true,
           showTrayIcon: true,
           closeAction: 'ask',
-          // 更新提示「跳过此版本」：记住被跳过的远程版本号（精确匹配），
-         // 自动检查遇到同版本不再弹窗；更高版本不受影响。空串=未跳过。
-         skippedUpdateVersion: '',
          clearTabsOnQuit: false, // 退出应用时不保存标签会话，下次打开总是空白
           showAllFiles: false, // 文件树过滤：默认只列受支持格式（markdown/image/text），true 时显示目录内全部文件
           toolbarCollapsed: false,

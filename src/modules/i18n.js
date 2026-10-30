@@ -61,7 +61,6 @@
         updateMenuText('btn-about', t('about'));
         updateMenuText('btn-open-folder', t('openFolder'));
         updateMenuText('btn-reload-menu', t('reloadFile'));
-        updateMenuText('btn-check-update', t('checkUpdate'));
         updateMenuText('btn-devtools', t('devtools'));
   
         // View mode tabs（三模式：阅读 / 源码 / 所见即所得）
@@ -271,20 +270,7 @@
         setText('close-dialog-remember-label-text', t('rememberChoice'));
         setText('close-dialog-minimize', t('minimizeToTray'));
         setText('close-dialog-quit', t('quitApp'));
-  
-        // Update dialog 静态文本（标题随状态由 showUpdateState 动态设置）
-        setText('update-state-checking-text', t('updateChecking'));
-        setText('update-available-suffix', t('updateAvailableSuffix'));
-        setText('update-current-version-label', t('updateCurrentVersionLabel'));
-        setText('update-notes-title', t('updateNotes'));
-        setText('update-latest-title', t('updateLatest'));
-        setText('update-latest-prefix', t('updateLatestPrefix'));
-        setText('update-latest-suffix', t('updateLatestSuffix'));
-        setText('update-skip', t('updateSkip'));
-        setText('update-skip-version', t('updateSkipVersion'));
-        setText('update-dl-suffix', t('updateDlSuffix'));
-        setText('update-action', t('updateChecking'));
-  
+
         // 跨文件搜索：目录路径 placeholder 补漏
         setPlaceholder('cs-dir', t('csDirPlaceholder'));
   

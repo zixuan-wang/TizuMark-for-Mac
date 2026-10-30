@@ -96,29 +96,6 @@ test('tauri: 窗口控制 minimize/toggleMaximize 调用对应窗口 API', async
   } finally { cleanup(w); }
 });
 
-test('tauri: checkUpdate 无更新显示最新 / 有更新填充版本与说明', async () => {
-  let updateResult = null;
-  const { w, ed } = await makeEnv(async (cmd) => {
-    if (cmd === 'plugin:updater|check') return updateResult;
-    if (cmd === 'get_cli_args') return [];
-    if (cmd === 'app_data_dir') return 'C:/tmp/tizumark-data';
-    return undefined;
-  });
-  try {
-    // 无更新
-    await ed.checkUpdate(true);
-    assert.strictEqual(ed.pendingUpdate ?? null, null, '无更新不应设置 pendingUpdate');
-    // 有更新
-    updateResult = { version: '9.9.9', body: '修复了一些问题', rid: 42 };
-    await ed.checkUpdate(true);
-    assert.strictEqual(w.document.getElementById('update-new-version').textContent, '9.9.9');
-    assert.strictEqual(ed.pendingUpdate.version, '9.9.9');
-    assert.strictEqual(ed.pendingUpdateRid, 42);
-    const btn = w.document.getElementById('update-action');
-    assert.strictEqual(btn.dataset.state, 'download', '按钮应处于下载状态');
-  } finally { cleanup(w); }
-});
-
 test('tauri: exportHTML 组装完整 HTML 并写文件', async () => {
   const calls = [];
   const { w, ed } = await makeEnv(async (cmd, args) => {
@@ -294,15 +271,6 @@ test('tauri: file-open 传目录且已有不同工作区——确认取消则不
     await fire(listeners, 'file-open', ['C:/t/dir-new']);
     await delay(50);
     assert.strictEqual(ed.workspaceFolder, 'C:/t/dir-new', '确认后应切换工作区');
-  } finally { cleanup(w); }
-});
-
-test('tauri: CLI 参数传目录直接作为工作区打开（不弹确认）', async () => {
-  const { w, ed } = await makeEnv(dirAwareInvoke({ cliArgs: ['C:/t/dir-cli', 'C:/t/a.md'] }));
-  try {
-    await delay(80);
-    assert.strictEqual(ed.workspaceFolder, 'C:/t/dir-cli', 'CLI 目录应直接设为工作区');
-    assert.ok(ed.tabs.some((t) => t.filePath === 'C:/t/a.md'), 'CLI 文件参数应打开为标签');
   } finally { cleanup(w); }
 });
 

@@ -7929,67 +7929,6 @@ select option {
   opacity: 0.8;
 }
 
-/* ====== Update dialog ====== */
-.update-dialog { max-width: 680px; width: min(680px, 92vw); }
-.update-version-highlight { font-weight: bold; color: var(--accent-color); }
-.update-current { font-size: calc(var(--ui-font-size) * 0.9231); color: var(--text-secondary); margin: 4px 0 12px; }
-.update-notes { max-height: 340px; overflow-y: auto; background: var(--bg-secondary); padding: 12px; border-radius: 6px; margin: 12px 0; font-size: calc(var(--ui-font-size) * 1); }
-.update-notes h4 { margin: 0 0 8px; font-size: calc(var(--ui-font-size) * 1); color: var(--text-secondary); }
-/* 复用预览区 markdown 排版（标题/表格/列表/引用/分隔线），但中和外层容器的内边距与背景，避免双重缩进 */
-.update-notes .preview-content { padding: 0; margin: 0; background: transparent; overflow: visible; min-height: 0; flex: none; }
-/* 说明区底色为 bg-secondary，表格隔行/表头改用 bg-primary 以拉开对比 */
-.update-notes .preview-content th,
-.update-notes .preview-content tbody tr:nth-child(even) { background-color: var(--bg-primary); }
-.update-progress { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
-.progress-bar { flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden; }
-.progress-fill { height: 100%; width: 0%; background: var(--accent-color); transition: width 0.3s; }
-#update-progress-text { font-size: calc(var(--ui-font-size) * 0.9231); color: var(--text-secondary); min-width: 40px; text-align: right; }
-#update-state-checking.hidden,
-#update-state-available.hidden,
-#update-state-latest.hidden { display: none; }
-
-#update-state-latest { padding: 8px 0 4px; }
-.update-latest-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 18px 16px 14px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(22, 163, 74, 0.10), rgba(22, 163, 74, 0.03));
-  border: 1px solid rgba(22, 163, 74, 0.18);
-}
-.update-latest-icon {
-  width: 68px; height: 68px;
-  margin-bottom: 14px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35);
-  animation: update-latest-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.update-latest-icon svg { width: 36px; height: 36px; }
-.update-latest-title {
-  margin: 0 0 6px;
-  font-size: calc(var(--ui-font-size) * 1.3846);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.update-latest-sub {
-  margin: 0;
-  font-size: calc(var(--ui-font-size) * 1);
-  color: var(--text-secondary);
-}
-.update-latest-sub .update-version-highlight {
-  color: #16a34a;
-  font-weight: 600;
-}
-@keyframes update-latest-pop {
-  0% { transform: scale(0.6); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
 /* ====== Base64 line collapse in editor ====== */
 .cm-base64-line {
   box-shadow: inset 3px 0 0 0 var(--accent-color);
@@ -8225,7 +8164,7 @@ select option {
 
   header, .toolbar, .editor-pane, .resizer, .outline-sidebar, .outline-resizer,
   .side-btn, .scroll-top-btn, .toast, footer, .statusbar,
-  #update-status, .dropdown-menu, .dropdown-backdrop, #toast-container,
+  .dropdown-menu, .dropdown-backdrop, #toast-container,
   #find-panel, #preview-find-panel { display: none !important; }
 
   #app { display: block !important; height: auto !important; overflow: visible !important; }

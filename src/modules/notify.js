@@ -9,7 +9,7 @@
       // 后端健康探测（dev 模式"僵尸界面"可见化修复）：启动时 + 每 30s 心跳 ping 一次。
       // 背景：dev 模式下前端页面与 Rust 后端 / Node dev-server 生命周期完全解耦（tauri-api 延迟
       // 求值 + 全降级是防白屏的刻意设计），后端挂掉时页面仍正常显示且无任何提示——用户无法区分
-      // 「应用正常」与「后端已死」。这里复用最轻的已有命令 get_cli_args 做心跳，不新增 IPC、
+      // 「应用正常」与「后端已死」。这里复用最轻的已有命令 app_data_dir 做心跳，不新增 IPC、
       // 不改 invoke 透传语义（N21 硬约束不受影响）。失败 → 顶部红条；恢复成功 → 自动隐藏。
       initBackendHealth() {
         this._probeBackendHealth();
@@ -19,7 +19,7 @@
         let down = false;
         try {
           if (!TauriApi.isAvailable()) throw new Error('not in tauri runtime');
-          await TauriApi.getCliArgs();
+          await TauriApi.appDataDir();
         } catch (_) {
           down = true;
         }

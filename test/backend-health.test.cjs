@@ -21,9 +21,9 @@ async function makeEditor(invokeImpl) {
   return { w, ed };
 }
 
-// 仅让 get_cli_args 挂掉（模拟 Rust IPC 断），其余命令维持默认，避免破坏初始化
+// 仅让 app_data_dir（心跳命令）挂掉（模拟 Rust IPC 断），其余命令维持默认，避免破坏初始化
 const cliDown = () => (cmd) => {
-  if (cmd === 'get_cli_args') throw new Error('ipc closed');
+  if (cmd === 'app_data_dir') throw new Error('ipc closed');
   return undefined;
 };
 
@@ -48,7 +48,7 @@ test('IPC reject（Rust 挂）：横幅显示且文案为 i18n', async () => {
 test('后端恢复后横幅自动隐藏', async () => {
   let down = true;
   const { w, ed } = await makeEditor((cmd) => {
-    if (cmd === 'get_cli_args' && down) throw new Error('ipc closed');
+    if (cmd === 'app_data_dir' && down) throw new Error('ipc closed');
     return undefined;
   });
   try {

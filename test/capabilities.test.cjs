@@ -2,7 +2,7 @@
 // 覆盖：① default.json 不得含 fs 插件权限（fs:read-all/write-all 曾过度授权任意文件读写，
 //        前端实际零调用 plugin:fs，文件读写全走自定义 read_file/write_file 命令）；
 //        ② src/ 与 dist/ 产物不得出现 plugin:fs / @tauri-apps/plugin-fs 引用；
-//        ③ 保留的核心权限（dialog/shell/updater/window-state）仍在位。
+//        ③ 保留的核心权限（dialog/shell/window-state/global-shortcut）仍在位。
 
 const fs = require('fs');
 const path = require('path');
@@ -45,13 +45,13 @@ test('capabilities: 前端与构建产物零引用 plugin:fs', () => {
   assert.deepEqual(hits, [], '不得引用 fs 插件 API（前端文件读写走自定义命令）');
 });
 
-test('capabilities: 核心权限仍在位（dialog/shell/updater/window-state）', () => {
+test('capabilities: 核心权限仍在位（dialog/shell/window-state/global-shortcut）', () => {
   const cap = JSON.parse(fs.readFileSync(capFile, 'utf8'));
   // 兼容字符串权限（如 "dialog:default"）和对象权限（如 {"identifier":"shell:allow-open",...}）
   const permIds = cap.permissions.map((p) => typeof p === 'string' ? p : p.identifier).join('\n');
   for (const expect of [
     'dialog:default', 'dialog:allow-open', 'dialog:allow-save',
-    'shell:allow-open', 'updater:default', 'window-state:default',
+    'shell:allow-open', 'window-state:default', 'global-shortcut:default',
   ]) {
     assert.ok(permIds.includes(expect), `应保留权限：${expect}`);
   }

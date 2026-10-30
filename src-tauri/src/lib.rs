@@ -107,24 +107,29 @@ fn safe_write_target(path: &str) -> Result<std::path::PathBuf, String> {
             Ok::<std::path::PathBuf, String>(result)
         })?;
 
-    let canonical_str = canonical.to_string_lossy().replace('/', "\\").to_lowercase();
-    // 系统关键 / 持久化目录前缀黑名单（Windows）
-    const BLOCKED: &[&str] = &[
-        "\\windows\\",
-        "\\program files\\",
-        "\\program files (x86)\\",
-        "\\system32\\",
-        "\\programdata\\microsoft\\windows\\start menu\\programs\\startup",
-        "\\appdata\\roaming\\microsoft\\windows\\start menu\\programs\\startup",
-        "\\documents and settings\\",
-        "autorun.inf",
-    ];
-    for b in BLOCKED {
-        if canonical_str.contains(b) {
-            return Err(format!("Refusing to write to protected path: {}", path));
-        }
+    // 系统关键目录前缀黑名单(macOS):canonicalize 已解析符号链接
+    // (/etc→/private/etc 等),故 /etc 与 /private/etc 都要拦。
+    let canonical_str = canonical.to_string_lossy().to_lowercase();
+    if let Some(rule) = blocked_path_rule(&canonical_str) {
+        let _ = rule;
+        return Err(format!("Refusing to write to protected path: {}", path));
     }
     Ok(canonical)
+}
+
+/// 黑名单判定纯函数:输入 canonicalize 后的全路径小写字符串,返回命中的规则。
+/// 独立成函数便于跨平台单测(不依赖真实文件系统)。精确到「目录本身或其子路径」,
+/// 不做 contains 子串匹配,避免 /systemfoo 之类误伤。
+fn blocked_path_rule(canonical_lower: &str) -> Option<&'static str> {
+    const BLOCKED: &[&str] = &[
+        "/system", "/library", "/applications", "/usr", "/private/etc", "/etc",
+    ];
+    for b in BLOCKED {
+        if canonical_lower == *b || canonical_lower.starts_with(&format!("{}/", b)) {
+            return Some(b);
+        }
+    }
+    None
 }
 
 #[tauri::command]
@@ -1299,13 +1304,33 @@ mod tests {
         let _ = fs::remove_file(&tmp);
     }
 
-    #[cfg(windows)]
+    #[test]
+    fn test_blocked_path_rule_darwin() {
+        // 系统关键目录(含子路径)命中
+        assert!(blocked_path_rule("/system/library/fontmodels").is_some());
+        assert!(blocked_path_rule("/library/startupitems/evil").is_some());
+        assert!(blocked_path_rule("/applications/evil.app/contents/macos/evil").is_some());
+        assert!(blocked_path_rule("/usr/local/bin/evil").is_some());
+        assert!(blocked_path_rule("/private/etc/evil.conf").is_some());
+        assert!(blocked_path_rule("/etc/evil.conf").is_some());
+        // 目录本身(无尾斜杠)也命中
+        assert!(blocked_path_rule("/system").is_some());
+        // 前缀相似但不同的路径不得误伤
+        assert_eq!(blocked_path_rule("/systemfoo/ok.txt"), None);
+        assert_eq!(blocked_path_rule("/users/ice/docs/note.md"), None);
+        assert_eq!(blocked_path_rule("/volumes/usb/note.md"), None);
+    }
+
+    #[cfg(target_os = "macos")]
     #[test]
     fn test_safe_write_target_rejects_protected_path() {
-        // 拒绝写入系统关键目录（如 C:\windows\system32）
-        let res = safe_write_target("C:\\windows\\system32\\evil.txt");
+        // 拒绝写入系统关键目录
+        let res = safe_write_target("/System/Library/evil.txt");
         assert!(res.is_err(), "写入系统目录应被拒绝");
         assert!(res.unwrap_err().contains("protected"), "错误应说明是受保护路径");
+        // 用户目录正常放行(canonicalize 会解析 /tmp→/private/tmp 等)
+        let res2 = safe_write_target("/tmp/tizumark_test_ok.md");
+        assert!(res2.is_ok(), "临时目录应放行,实际 {:?}", res2.err());
     }
 
     // ---------- 剩余命令单测（file_meta / list_dir / write_binary_file / ensure_dir /

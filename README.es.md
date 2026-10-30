@@ -42,7 +42,7 @@ npm run dev
 npm run build
 ```
 
-Resultado: `src-tauri/target/release/bundle/app/TizuMark.app` (solo `.app`; sin dmg ni instalador).
+Resultado: `src-tauri/target/release/bundle/macos/TizuMark.app` (solo `.app`; sin dmg ni instalador).
 
 ## Atajos
 

@@ -40,7 +40,7 @@ npm run dev
 npm run build
 ```
 
-产物：`src-tauri/target/release/bundle/app/TizuMark.app`（仅 `.app`，不生成 dmg/安装器）。
+产物：`src-tauri/target/release/bundle/macos/TizuMark.app`（仅 `.app`，不生成 dmg/安装器）。
 
 ## 快捷键
 

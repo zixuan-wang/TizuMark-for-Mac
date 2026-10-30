@@ -512,6 +512,12 @@ window.addEventListener('DOMContentLoaded', async () => {
       const args = event.payload;
       if (!args || args.length === 0) return;
 
+      // 启动未完成：先入队，等 restoreSession 结束后统一打开（否则会被会话覆盖）
+      if (!window.editor._startupOpenReady) {
+        window.editor.enqueueOpenPaths(args);
+        return;
+      }
+
       try {
         const w = TauriApi.currentWindow();
         await w.unminimize();
@@ -528,13 +534,22 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateLoadingProgress(85, tInit('progressLoadingFile'));
     try {
       const hadSession = await window.editor.restoreSession();
+      // Finder 冷启动打开的文件可能早于本监听到达：Rust 侧缓冲（take_opened_paths）
+      // + 监听入队一起合并去重后打开。打开失败不阻塞启动。
+      let startupPaths = [];
+      try { startupPaths = (await TauriApi.takeOpenedPaths()) || []; } catch (_) {}
+      let startupOpenedCount = 0;
+      try { startupOpenedCount = await window.editor.flushPendingOpenPaths(startupPaths); } catch (e) {
+        console.warn('Failed to open startup files:', e);
+      }
       let currentVersion = '';
       // 首次安装 / 升级后首次打开：自动展示使用说明和 demo.md
       const lastVersion = localStorage.getItem('tizumark-app-version');
       try {
         currentVersion = await TauriApi.getVersion();
       } catch (_) { /* fallback 到静默跳过 */ }
-      if (isFirstLaunch || (currentVersion && lastVersion !== currentVersion)) {
+      // 本次启动有 Finder 打开的文件时，不再弹使用说明/demo（用户意图优先）
+      if (startupOpenedCount === 0 && (isFirstLaunch || (currentVersion && lastVersion !== currentVersion))) {
         window.editor.openUserGuide();
         // 同步打开 demo.md（使用说明内嵌的 demo.md 链接已可手动点开，
         // 此处自动打开省去用户多一步点击）
@@ -555,6 +570,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (e) {
       console.warn('Failed to load session:', e);
+      // 即使会话恢复失败也要放行后续 file-open，避免后续打开永远排队
+      try { await window.editor.flushPendingOpenPaths([]); } catch (_) {}
     }
 
     updateLoadingProgress(100, tInit('progressReady'));

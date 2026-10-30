@@ -76,6 +76,23 @@ test('tauri: EULA 已接受时对话框隐藏且初始化继续', async () => {
   } finally { cleanup(w); }
 });
 
+test('tauri: 启动期 file-open 先入队，flush 后按序去重打开（冷启动不丢/不重复）', async () => {
+  const { w, ed } = await makeEnv();
+  try {
+    const opened = [];
+    ed.openPathsSmart = async (paths) => { opened.push(...paths); };
+    ed._startupOpenReady = false;
+    ed.enqueueOpenPaths(['/t/a.md', '/t/b.md']);
+    ed.enqueueOpenPaths(['/t/b.md', '/t/c.md']);
+    assert.deepStrictEqual(opened, [], '启动未就绪时不得立即打开（会被 restoreSession 覆盖）');
+    const count = await ed.flushPendingOpenPaths(['/t/a.md', '/t/d.md']);
+    assert.deepStrictEqual(opened, ['/t/a.md', '/t/b.md', '/t/c.md', '/t/d.md'], '应按入队+缓冲顺序打开并去重');
+    assert.strictEqual(count, 4);
+    await ed.enqueueOpenPaths(['/t/e.md']);
+    assert.deepStrictEqual(opened.slice(-1), ['/t/e.md'], 'flush 后的事件应立即打开');
+  } finally { cleanup(w); }
+});
+
 test('tauri: exportHTML 组装完整 HTML 并写文件', async () => {
   const calls = [];
   const { w, ed } = await makeEnv(async (cmd, args) => {

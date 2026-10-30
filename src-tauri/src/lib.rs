@@ -285,6 +285,36 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<TrayIcon> {
 // 承担。前端在应用启动/修改快捷键时调用 set_close_to_tray_shortcut 注册/注销。
 struct GlobalShortcutState(Mutex<Option<String>>);
 
+// ====== Finder 打开文件的启动缓冲 ======
+// macOS 的 application:openURLs: 可能在 webview 加载 / 前端注册 file-open 监听之前到达，
+// Tauri 的事件只投递不排队：监听未就绪时直接丢弃。因此 Rust 侧先落盘缓冲，前端启动完成
+// 后调用 take_opened_paths 取走（同时 file-open 事件作为运行期即时投递的补充）。
+#[derive(Default)]
+struct OpenedPaths(Mutex<Vec<String>>);
+
+impl OpenedPaths {
+    fn push(&self, paths: Vec<String>) {
+        if paths.is_empty() {
+            return;
+        }
+        if let Ok(mut buf) = self.0.lock() {
+            buf.extend(paths);
+        }
+    }
+
+    fn take(&self) -> Vec<String> {
+        match self.0.lock() {
+            Ok(mut buf) => std::mem::take(&mut *buf),
+            Err(_) => Vec::new(),
+        }
+    }
+}
+
+#[tauri::command]
+fn take_opened_paths(state: tauri::State<OpenedPaths>) -> Vec<String> {
+    state.take()
+}
+
 // 全局热键回调：窗口可见 → 隐藏到托盘（仅当托盘可见，否则窗口将无法恢复）；
 // 窗口已隐藏/最小化 → 显示并聚焦（show_window 已做 unminimize + show + set_focus）。
 fn toggle_main_window(app: &tauri::AppHandle) {
@@ -1084,7 +1114,9 @@ pub fn run() {
         })
         .manage(WatcherState(Mutex::new(None)))
         .manage(GlobalShortcutState(Mutex::new(None)))
+        .manage(OpenedPaths::default())
         .invoke_handler(tauri::generate_handler![
+            take_opened_paths,
             open_devtools,
             set_window_behavior,
             set_close_to_tray_shortcut,
@@ -1125,6 +1157,11 @@ pub fn run() {
                     .filter_map(|url| url.to_file_path().ok())
                     .map(|p| p.to_string_lossy().to_string())
                     .collect();
+                // 先缓冲：冷启动时前端监听可能尚未注册，事件会被 Tauri 丢弃
+                if let Some(state) = app_handle.try_state::<OpenedPaths>() {
+                    state.push(paths.clone());
+                }
+                // 运行期窗口已就绪则同时即时投递（前端会与 take_opened_paths 去重）
                 if let Some(window) = app_handle.get_webview_window("main") {
                     let _ = window.emit("file-open", paths);
                 }
@@ -1317,6 +1354,15 @@ mod tests {
         assert!(r.is_ok());
         assert_eq!(r.unwrap(), content);
         let _ = fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn test_opened_paths_buffer_drains_once() {
+        let state = OpenedPaths::default();
+        state.push(vec!["/tmp/a.md".to_string()]);
+        state.push(vec!["/tmp/b.md".to_string(), "/tmp/c.md".to_string()]);
+        assert_eq!(state.take(), vec!["/tmp/a.md", "/tmp/b.md", "/tmp/c.md"]);
+        assert!(state.take().is_empty(), "取走后缓冲区必须清空，避免重复打开");
     }
 
     #[test]

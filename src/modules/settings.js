@@ -186,6 +186,10 @@
         });
       },
       async initSettings() {
+        // 主目录缓存：绝对图片目录允许 ~/ 写法，写盘/引用前需展开
+        if (!this._homeDir) {
+          try { this._homeDir = (await TauriApi.homeDir()) || ''; } catch (_) { this._homeDir = ''; }
+        }
         document.getElementById('btn-settings').addEventListener('click', () => this.showSettings());
         document.getElementById('settings-close-x').addEventListener('click', () => this.hideSettings(true));
         const applyBtn = document.getElementById('settings-apply-btn');
@@ -616,7 +620,11 @@
         const mode = this.settings.imageAssetPathMode || 'relative';
         const path = this.settings.imageAssetPath || 'assets';
         if (mode === 'absolute') {
-          return { assetsDir: path, refPrefix: path };
+          // ~/ 展开为用户主目录：Rust 侧按普通路径处理，不会解析 ~
+          const abs = path.startsWith('~/') && this._homeDir
+            ? this._homeDir.replace(/\/+$/, '') + path.slice(1)
+            : path;
+          return { assetsDir: abs, refPrefix: abs };
         }
         const tab = this.activeTab;
         const sep = tab && tab.filePath ? (tab.filePath.includes('/') ? '/' : '\\') : '/';

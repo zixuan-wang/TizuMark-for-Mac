@@ -1244,3 +1244,26 @@ test('settings: 界面字号与字重滑块初始化后存在并可回填', asyn
     assert.strictEqual(w.document.getElementById('editor-font-weight-label').textContent, '600', '编辑字重标签应回填');
   } finally { cleanup(w); }
 });
+
+// 回归（审查 I1）：绝对图片目录默认值含 ~，必须展开为用户主目录，
+// 否则 safe_write_target 无法解析相对路径，粘贴图片必然失败。
+test('settings: getImageAssetPath 绝对模式展开 ~/ 前缀（写盘与引用同路径）', async () => {
+  const { w, ed, getInitErr } = await makeEditor();
+  try {
+    assert.strictEqual(getInitErr(), null, '初始化不应报错');
+    ed.settings.imageAssetPathMode = 'absolute';
+    ed.settings.imageAssetPath = '~/Pictures/images';
+    ed._homeDir = '/Users/tester';
+    const r = ed.getImageAssetPath();
+    assert.strictEqual(r.assetsDir, '/Users/tester/Pictures/images', 'assetsDir 应展开 ~');
+    assert.strictEqual(r.refPrefix, '/Users/tester/Pictures/images', '引用前缀应与写盘路径一致');
+    // 递归目录同样展开
+    ed.settings.imageAssetPath = '~/a/b';
+    assert.strictEqual(ed.getImageAssetPath().assetsDir, '/Users/tester/a/b');
+    // 非 ~ 路径原样返回（含中间出现的 ~ 不误伤）
+    ed.settings.imageAssetPath = '/tmp/imgs';
+    assert.strictEqual(ed.getImageAssetPath().assetsDir, '/tmp/imgs');
+    ed.settings.imageAssetPath = '~/images/~backup';
+    assert.strictEqual(ed.getImageAssetPath().assetsDir, '/Users/tester/images/~backup');
+  } finally { cleanup(w); }
+});

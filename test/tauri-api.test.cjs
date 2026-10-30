@@ -39,7 +39,7 @@ test('COMMANDS 集合 == lib.rs generate_handler! 注册集合（C17，前后端
   assert.deepEqual(names, expected,
     `前后端命令集合必须一致。差异：${JSON.stringify(names)} vs ${JSON.stringify(expected)}`);
   // 数量守卫：防止无意中增删命令而忘记同步另一端（新增命令时同步更新此数）
-  assert.equal(expected.length, 27, '应有 27 个自定义命令');
+  assert.equal(expected.length, 28, '应有 28 个自定义命令');
 });
 
 test('generate_handler! 解析失败必须显式抛错（N27）', () => {

@@ -334,6 +334,33 @@
         await this.openFolderPath(folderPath);
         return true;
       },
+      // 启动期 file-open 暂存：监听可能在 restoreSession 完成前收到事件，
+      // 立即打开会被 restoreSession 的整体覆盖冲掉（macOS 冷启动 RunEvent::Opened）。
+      enqueueOpenPaths(paths) {
+        const list = (paths || []).filter(Boolean);
+        if (list.length === 0) return;
+        if (!this._startupOpenReady) {
+          this._pendingOpenPaths = (this._pendingOpenPaths || []).concat(list);
+          return;
+        }
+        return this.openPathsSmart(list);
+      },
+      // 启动收尾：合并暂存 + Rust 侧缓冲（take_opened_paths），去重后统一打开。
+      // 返回实际打开的路径数，供调用方决定是否还要展示首次使用引导。
+      async flushPendingOpenPaths(extraPaths) {
+        const merged = (this._pendingOpenPaths || []).concat(extraPaths || []);
+        this._pendingOpenPaths = [];
+        this._startupOpenReady = true;
+        const seen = new Set();
+        const unique = [];
+        for (const p of merged) {
+          if (!p || seen.has(p)) continue;
+          seen.add(p);
+          unique.push(p);
+        }
+        if (unique.length > 0) await this.openPathsSmart(unique);
+        return unique.length;
+      },
       // 统一「一批路径按目录/文件分发」：目录加载为工作区（仅第一个，多余目录提示忽略），
       // 文件走 openFilePath。drag-drop / file-open 事件 / 启动 CLI 参数三处入口共用。
       async openPathsSmart(paths, { confirmWorkspaceSwitch = true } = {}) {

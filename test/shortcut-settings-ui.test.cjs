@@ -246,14 +246,15 @@ test('校验：录制内置固定快捷键被拒绝（不写入、提示占用�
   }
 });
 
-test('校验：findBuiltinShortcut 规范比对（Ctrl/Control、大小写均命中）', async () => {
+test('校验：findBuiltinShortcut 规范比对（Cmd/Control 同族、大小写均命中）', async () => {
   const { w } = await buildEnv({ captureInitErr: true });
   try {
     await waitForEditor(w);
     const ed = w.editor;
     assert.ok(ed.getBuiltinFixedShortcuts().length >= 15, '内置快捷键清单应已定义');
-    assert.ok(ed.findBuiltinShortcut('Ctrl+Home'), 'Ctrl+Home 应命中内置');
-    assert.ok(ed.findBuiltinShortcut('Control+ArrowLeft'), 'Control+ArrowLeft 应命中（修饰键别名/大小写归一）');
+    assert.ok(ed.findBuiltinShortcut('Cmd+Home'), 'Cmd+Home 应命中内置');
+    assert.ok(ed.findBuiltinShortcut('Control+Home'), 'Control(=meta 同族)+Home 应命中（修饰键归一）');
+    assert.ok(ed.findBuiltinShortcut('alt+arrowleft'), 'alt+arrowleft 应命中（大小写归一）');
     assert.strictEqual(ed.findBuiltinShortcut('Ctrl+G'), null, '普通键不应误判为内置');
   } finally {
     cleanup(w);

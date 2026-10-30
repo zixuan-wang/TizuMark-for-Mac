@@ -262,10 +262,10 @@
           { combo: 'Cmd+End', group: 'nav', name: '跳到结尾', desc: '把光标移到整篇文档的最后面' },
           { combo: 'Shift+Cmd+Home', group: 'nav', name: '选到开头', desc: '从光标位置一路选中到文档开头' },
           { combo: 'Shift+Cmd+End', group: 'nav', name: '选到结尾', desc: '从光标位置一路选中到文档结尾' },
-          { combo: 'Cmd+ArrowLeft', group: 'nav', name: '按词左移', desc: '光标向左跳过一个完整的词' },
-          { combo: 'Cmd+ArrowRight', group: 'nav', name: '按词右移', desc: '光标向右跳过一个完整的词' },
-          { combo: 'Shift+Cmd+ArrowLeft', group: 'nav', name: '向左选词', desc: '按住 Shift，再向左按词选中文本' },
-          { combo: 'Shift+Cmd+ArrowRight', group: 'nav', name: '向右选词', desc: '按住 Shift，再向右按词选中文本' },
+          { combo: 'Alt+ArrowLeft', group: 'nav', name: '按词左移', desc: '光标向左跳过一个完整的词' },
+          { combo: 'Alt+ArrowRight', group: 'nav', name: '按词右移', desc: '光标向右跳过一个完整的词' },
+          { combo: 'Shift+Alt+ArrowLeft', group: 'nav', name: '向左选词', desc: '按住 Shift，再向左按词选中文本' },
+          { combo: 'Shift+Alt+ArrowRight', group: 'nav', name: '向右选词', desc: '按住 Shift，再向右按词选中文本' },
           { combo: 'Cmd+Z', group: 'edit', name: '撤销', desc: '撤销上一步操作' },
           { combo: 'Cmd+Y', group: 'edit', name: '重做', desc: '恢复刚刚被撤销的操作' },
           { combo: 'Cmd+A', group: 'edit', name: '全选', desc: '选中编辑器里的全部内容' },
@@ -280,10 +280,10 @@
           { combo: 'Cmd+End', group: 'nav', name: 'Go to end', desc: 'Move the cursor to the very end of the document' },
           { combo: 'Shift+Cmd+Home', group: 'nav', name: 'Select to start', desc: 'Select from the cursor all the way to the document start' },
           { combo: 'Shift+Cmd+End', group: 'nav', name: 'Select to end', desc: 'Select from the cursor all the way to the document end' },
-          { combo: 'Cmd+ArrowLeft', group: 'nav', name: 'Word left', desc: 'Move the cursor left by one whole word' },
-          { combo: 'Cmd+ArrowRight', group: 'nav', name: 'Word right', desc: 'Move the cursor right by one whole word' },
-          { combo: 'Shift+Cmd+ArrowLeft', group: 'nav', name: 'Select word left', desc: 'Hold Shift to select words to the left' },
-          { combo: 'Shift+Cmd+ArrowRight', group: 'nav', name: 'Select word right', desc: 'Hold Shift to select words to the right' },
+          { combo: 'Alt+ArrowLeft', group: 'nav', name: 'Word left', desc: 'Move the cursor left by one whole word' },
+          { combo: 'Alt+ArrowRight', group: 'nav', name: 'Word right', desc: 'Move the cursor right by one whole word' },
+          { combo: 'Shift+Alt+ArrowLeft', group: 'nav', name: 'Select word left', desc: 'Hold Shift to select words to the left' },
+          { combo: 'Shift+Alt+ArrowRight', group: 'nav', name: 'Select word right', desc: 'Hold Shift to select words to the right' },
           { combo: 'Cmd+Z', group: 'edit', name: 'Undo', desc: 'Undo the last action' },
           { combo: 'Cmd+Y', group: 'edit', name: 'Redo', desc: 'Redo the last undone action' },
           { combo: 'Cmd+A', group: 'edit', name: 'Select all', desc: 'Select everything in the editor' },
@@ -298,10 +298,10 @@
           { combo: 'Cmd+End', group: 'nav', name: 'Ir al final', desc: 'Mueve el cursor al final del documento' },
           { combo: 'Shift+Cmd+Home', group: 'nav', name: 'Seleccionar al inicio', desc: 'Selecciona desde el cursor hasta el inicio del documento' },
           { combo: 'Shift+Cmd+End', group: 'nav', name: 'Seleccionar al final', desc: 'Selecciona desde el cursor hasta el final del documento' },
-          { combo: 'Cmd+ArrowLeft', group: 'nav', name: 'Palabra a la izquierda', desc: 'Mueve el cursor una palabra completa a la izquierda' },
-          { combo: 'Cmd+ArrowRight', group: 'nav', name: 'Palabra a la derecha', desc: 'Mueve el cursor una palabra completa a la derecha' },
-          { combo: 'Shift+Cmd+ArrowLeft', group: 'nav', name: 'Seleccionar palabra izq.', desc: 'Mantiene Shift para seleccionar palabras hacia la izquierda' },
-          { combo: 'Shift+Cmd+ArrowRight', group: 'nav', name: 'Seleccionar palabra der.', desc: 'Mantiene Shift para seleccionar palabras hacia la derecha' },
+          { combo: 'Alt+ArrowLeft', group: 'nav', name: 'Palabra a la izquierda', desc: 'Mueve el cursor una palabra completa a la izquierda' },
+          { combo: 'Alt+ArrowRight', group: 'nav', name: 'Palabra a la derecha', desc: 'Mueve el cursor una palabra completa a la derecha' },
+          { combo: 'Shift+Alt+ArrowLeft', group: 'nav', name: 'Seleccionar palabra izq.', desc: 'Mantiene Shift para seleccionar palabras hacia la izquierda' },
+          { combo: 'Shift+Alt+ArrowRight', group: 'nav', name: 'Seleccionar palabra der.', desc: 'Mantiene Shift para seleccionar palabras hacia la derecha' },
           { combo: 'Cmd+Z', group: 'edit', name: 'Deshacer', desc: 'Deshace la última acción' },
           { combo: 'Cmd+Y', group: 'edit', name: 'Rehacer', desc: 'Rehace la última acción deshecha' },
           { combo: 'Cmd+A', group: 'edit', name: 'Seleccionar todo', desc: 'Selecciona todo el contenido del editor' },
@@ -845,6 +845,11 @@
         // 首列（我们要末行末列）；CM 默认 Ctrl+Home 反而「选中」（我们要移动）。
         // 注意：CM 的 extendSelection(head) 单参数等价 setCursor（移动、collapsed），并不会
         // 保留原锚点；真正的「从光标选中到目标」需用 setSelection(原光标, 目标)。
+        extraKeys['Cmd-Home']        = (cm) => cm.setCursor({ line: cm.firstLine(), ch: 0 });
+        extraKeys['Cmd-End']         = (cm) => cm.setCursor({ line: cm.lastLine(), ch: cm.getLine(cm.lastLine()).length });
+        extraKeys['Shift-Cmd-Home']  = (cm) => { const c = cm.getCursor(); cm.setSelection(c, { line: cm.firstLine(), ch: 0 }); };
+        extraKeys['Shift-Cmd-End']   = (cm) => { const c = cm.getCursor(); cm.setSelection(c, { line: cm.lastLine(), ch: cm.getLine(cm.lastLine()).length }); };
+        // 物理 Control 别名
         extraKeys['Ctrl-Home']       = (cm) => cm.setCursor({ line: cm.firstLine(), ch: 0 });
         extraKeys['Ctrl-End']        = (cm) => cm.setCursor({ line: cm.lastLine(), ch: cm.getLine(cm.lastLine()).length });
         extraKeys['Shift-Ctrl-Home'] = (cm) => { const c = cm.getCursor(); cm.setSelection(c, { line: cm.firstLine(), ch: 0 }); };
@@ -854,6 +859,14 @@
         // 方向键与 Home/End 同逻辑：需在全局捕获 keydown 监听里「放行」（见下方放行名单），
         // 否则事件被 preventDefault 后 CM 收不到、custom handler 永不执行。
         // Shift 版本复用同一 handler：extendSelectionsBy 会按 display.shift 自动扩展选区。
+        // macOS 惯例：⌥←/⌥→ 按词移动（CM macDefault 的 Alt-Left 是 goGroupLeft，
+        // 这里换成 Intl.Segmenter 版本，中文分词更准）；Cmd-Left/Right 保持 CM 默认
+        // 的行首/行尾语义。
+        extraKeys['Alt-Left']         = (cm) => this._moveByWord(cm, -1, false);
+        extraKeys['Alt-Right']        = (cm) => this._moveByWord(cm, 1, false);
+        extraKeys['Shift-Alt-Left']   = (cm) => this._moveByWord(cm, -1, true);
+        extraKeys['Shift-Alt-Right']  = (cm) => this._moveByWord(cm, 1, true);
+        // 物理 Control 组合保留为别名（外接 PC 键盘习惯）
         extraKeys['Ctrl-Left']        = (cm) => this._moveByWord(cm, -1, false);
         extraKeys['Ctrl-Right']       = (cm) => this._moveByWord(cm, 1, false);
         extraKeys['Shift-Ctrl-Left']  = (cm) => this._moveByWord(cm, -1, true);

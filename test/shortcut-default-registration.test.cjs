@@ -332,3 +332,22 @@ test('F1 src/app.js 通过 node --check 语法检查', () => {
   }
   assert.ok(ok, 'app.js 语法检查失败: ' + msg);
 });
+
+// 回归（审查 I2）：快捷键表宣称「⌘←/⌘→ 按词移动」，但 CM5 的 mac keymap 把
+// Cmd-Left/Right 映射为行首/行尾。macOS 惯例是 ⌥←/⌥→ 按词移动，自定义分词
+// 处理器必须绑在 Alt- 上，表里也应展示 ⌥←/⌥→。
+test('macOS 语义：按词移动绑定 Alt+方向键（⌥←/⌥→），不再宣称 Cmd+←/→', () => {
+  assert.ok(APP.includes("extraKeys['Alt-Left']"),
+    '自定义按词移动应绑定 Alt-Left（Cmd-Left 在 CM mac keymap 是 goLineLeft）');
+  assert.ok(APP.includes("extraKeys['Alt-Right']"), '应绑定 Alt-Right');
+  assert.ok(APP.includes("extraKeys['Shift-Alt-Left']"), '应绑定 Shift-Alt-Left');
+  assert.ok(APP.includes("extraKeys['Shift-Alt-Right']"), '应绑定 Shift-Alt-Right');
+  const builtin = extractMethod('getBuiltinFixedShortcuts() {');
+  const zh = builtin.call({ settings: { language: 'zh' } });
+  assert.ok(zh.some((x) => x.combo === 'Alt+ArrowLeft' && /按词左移/.test(x.name)),
+    '内置表应按词左移 = Alt+ArrowLeft（显示 ⌥←）');
+  assert.ok(!zh.some((x) => x.combo === 'Cmd+ArrowLeft'),
+    '内置表不得把 Cmd+ArrowLeft 标为按词移动（实际是行首）');
+  assert.ok(!zh.some((x) => x.combo === 'Shift+Cmd+ArrowLeft'),
+    '内置表不得把 Shift+Cmd+ArrowLeft 标为向左选词（实际是选到行首）');
+});

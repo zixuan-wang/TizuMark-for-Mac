@@ -64,3 +64,14 @@ test('capabilities: 核心权限仍在位（dialog/shell/window-state/global-sho
   assert.ok(!permIds.includes('shell:allow-execute') && !permIds.includes('shell:allow-spawn'),
     '不得出现 shell 任意命令执行权限');
 });
+
+// 回归（2026-10-30 审查 C1）：data-tauri-drag-region 由 Tauri 注入的 drag.js 调
+// plugin:window|start_dragging 实现，该命令受 ACL 管控；删权限=窗口无法拖动。
+test('capabilities: 使用 data-tauri-drag-region 时必须授予 allow-start-dragging', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'src', 'index.html'), 'utf8');
+  if (!html.includes('data-tauri-drag-region')) return;
+  const cap = JSON.parse(fs.readFileSync(capFile, 'utf8'));
+  const permIds = cap.permissions.map((p) => typeof p === 'string' ? p : p.identifier);
+  assert.ok(permIds.includes('core:window:allow-start-dragging'),
+    'index.html 使用 data-tauri-drag-region（drag.js 调 start_dragging IPC），必须保留该权限');
+});

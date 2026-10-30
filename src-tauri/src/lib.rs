@@ -134,11 +134,7 @@ fn read_file(path: String) -> Result<String, String> {
         let kind = if e.kind() == std::io::ErrorKind::NotFound {
             "NotFound"
         } else if e.kind() == std::io::ErrorKind::PermissionDenied {
-            // Windows 上文件被独占锁定（ERROR_SHARING_VIOLATION=32）也归为锁定
-            match e.raw_os_error() {
-                Some(32) => "Locked",
-                _ => "PermissionDenied",
-            }
+            "PermissionDenied"
         } else {
             "Io"
         };
@@ -462,39 +458,20 @@ fn list_dir(path: String) -> Result<DirListing, String> {
     Ok(DirListing { entries, truncated })
 }
 
-// 在文件管理器中「打开所在目录」并选中目标。
-// 目录：直接打开该目录本身；文件：打开父目录并选中文件。
-// 跨平台：Windows explorer（目录直接打开 / 文件 /select），macOS open（目录直接打开 / 文件 -R），Linux xdg-open（目录直接打开 / 文件打开父目录）。
+// 在文件管理器中「打开所在目录」并选中目标（macOS Finder）。
+// 目录：直接打开该目录本身；文件：打开父目录并选中文件（open -R）。
 // 关键：spawn 失败必须向外抛 Err（不能被 let _ = 吞掉），否则前端收到 Ok 却无反应。
-// 关键：去掉 Windows 长路径前缀 \\?\（dev 模式下 Tauri canonical 路径会带此前缀，explorer / shell 都不认 → 静默失败）。
 #[tauri::command]
 fn reveal_in_folder(path: String, is_dir: bool) -> Result<(), String> {
     if path.is_empty() {
         return Err("path is empty".to_string());
     }
-    let path = path.strip_prefix(r"\\?\").unwrap_or(&path).to_string();
     let spawn_res = if is_dir {
         // 目录：直接打开该文件夹本身
-        #[cfg(target_os = "windows")]
-        { std::process::Command::new("explorer").arg(&path).spawn() }
-        #[cfg(target_os = "macos")]
-        { std::process::Command::new("open").arg(&path).spawn() }
-        #[cfg(target_os = "linux")]
-        { std::process::Command::new("xdg-open").arg(&path).spawn() }
+        std::process::Command::new("open").arg(&path).spawn()
     } else {
-        // 文件：打开父目录并选中（Windows/macOS 选中文件，Linux 无选中概念）
-        #[cfg(target_os = "windows")]
-        { std::process::Command::new("explorer").args(["/select,", &path]).spawn() }
-        #[cfg(target_os = "macos")]
-        { std::process::Command::new("open").args(["-R", &path]).spawn() }
-        #[cfg(target_os = "linux")]
-        {
-            let parent = std::path::Path::new(&path)
-                .parent()
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or_else(|| path.clone());
-            std::process::Command::new("xdg-open").arg(parent).spawn()
-        }
+        // 文件：打开父目录并选中
+        std::process::Command::new("open").args(["-R", &path]).spawn()
     };
     spawn_res.map_err(|e| format!("无法启动文件管理器 ({}): {}", path, e))?;
     Ok(())
@@ -851,10 +828,6 @@ async fn list_system_fonts() -> Result<Vec<String>, String> {
     let result = tauri::async_runtime::spawn_blocking(|| {
         let mut db = fontdb::Database::new();
         db.load_system_fonts();
-        // Windows 补充：注册表可能指向任意绝对路径的字体文件（企业部署场景），
-        // fontdb 的目录扫描覆盖不到；尽力而为，失败仅跳过。
-        #[cfg(target_os = "windows")]
-        load_windows_registry_fonts(&mut db);
         let mut names: std::collections::HashSet<String> = std::collections::HashSet::new();
         for face in db.faces() {
             for (family, _lang) in &face.families {
@@ -873,118 +846,6 @@ async fn list_system_fonts() -> Result<Vec<String>, String> {
         Ok(Ok(list)) => Ok(list),
         Ok(Err(e)) => Err(e),
         Err(e) => Err(e.to_string()),
-    }
-}
-
-// Windows：枚举 HKLM/HKCU 注册表 Fonts 键，把每个值（字体文件名或绝对路径）加载进 fontdb。
-#[cfg(target_os = "windows")]
-fn load_windows_registry_fonts(db: &mut fontdb::Database) {
-    use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
-    use winreg::RegKey;
-    const SUBKEY: &str = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts";
-    let system_root = std::env::var("SYSTEMROOT").unwrap_or_else(|_| "C:\\Windows".to_string());
-    let mut paths: Vec<std::path::PathBuf> = Vec::new();
-    for hive in [HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER] {
-        if let Ok(key) = RegKey::predef(hive).open_subkey(SUBKEY) {
-            for (_, value) in key.enum_values().flatten() {
-                let Some(data) = reg_value_string(&value) else { continue };
-                let data = data.trim();
-                if data.is_empty() {
-                    continue;
-                }
-                let p = if std::path::Path::new(data).is_absolute() {
-                    std::path::PathBuf::from(data)
-                } else {
-                    std::path::Path::new(&system_root).join("Fonts").join(data)
-                };
-                paths.push(p);
-            }
-        }
-    }
-    for p in paths {
-        if p.is_file() {
-            let _ = db.load_font_file(&p);
-        }
-    }
-}
-
-// Windows：启动时自愈 .md / .markdown 文件关联的「打开方式」（OpenWithProgids / Applications）。
-// 背景：NSIS 安装器每次安装/更新都会注册文件关联，但 Windows 偶发在应用更新后清掉
-// per-user 的 OpenWithProgids，导致右键「打开方式」里看不到 TizuMark。
-// 这里仅检查缺失才补，只写 HKCU\Software\Classes 下最小键（与安装器同源），失败静默，不阻塞启动。
-#[cfg(target_os = "windows")]
-fn repair_file_association() {
-    use winreg::enums::HKEY_CURRENT_USER;
-    use winreg::RegKey;
-
-    const PROGID: &str = "Markdown";
-    const EXTS: [&str; 2] = [".md", ".markdown"];
-
-    // 当前可执行文件路径（例如 C:\...\TizuMark\tizumark.exe）
-    let Ok(exe) = std::env::current_exe().map(|p| p.to_string_lossy().to_string()) else {
-        return;
-    };
-    let exe_name = std::path::Path::new(&exe)
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| "tizumark.exe".to_string());
-    let open_cmd = format!("\"{}\" \"%1\"", exe);
-
-    let root = RegKey::predef(HKEY_CURRENT_USER);
-
-    for ext in EXTS {
-        // 1) HKCU\Software\Classes\<ext>\OpenWithProgids\Markdown —— 缺失才补空值
-        let owp = format!(r"Software\Classes\{}\OpenWithProgids", ext);
-        match root.open_subkey_with_flags(&owp, winreg::enums::KEY_WRITE) {
-            Ok(key) => {
-                if key.get_value::<String, _>(PROGID).is_err() {
-                    let _ = key.set_value(PROGID, &"");
-                }
-            }
-            Err(_) => {
-                if let Ok((new_key, _)) = root.create_subkey(&owp) {
-                    let _ = new_key.set_value(PROGID, &"");
-                }
-            }
-        }
-
-        // 2) HKCU\Software\Classes\Applications\<exe>\shell\open\command —— 缺失才补
-        let app = format!(r"Software\Classes\Applications\{}\shell\open\command", exe_name);
-        match root.open_subkey_with_flags(&app, winreg::enums::KEY_WRITE) {
-            Ok(key) => {
-                if key.get_value::<String, _>("").is_err() {
-                    let _ = key.set_value("", &open_cmd);
-                }
-            }
-            Err(_) => {
-                if let Ok((new_key, _)) = root.create_subkey(&app) {
-                    let _ = new_key.set_value("", &open_cmd);
-                }
-            }
-        }
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn reg_value_string(v: &winreg::RegValue) -> Option<String> {
-    use winreg::enums::{REG_EXPAND_SZ, REG_SZ};
-    if v.vtype != REG_SZ && v.vtype != REG_EXPAND_SZ {
-        return None;
-    }
-    let bytes = &v.bytes;
-    if bytes.len() % 2 != 0 {
-        return None;
-    }
-    let units: Vec<u16> = bytes
-        .chunks_exact(2)
-        .map(|c| u16::from_le_bytes([c[0], c[1]]))
-        .collect();
-    let s = String::from_utf16_lossy(&units);
-    let s = s.trim_end_matches('\0').to_string();
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
     }
 }
 
@@ -1211,9 +1072,6 @@ pub fn run() {
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
             window.show()?;
-            // Windows 启动时自愈 .md/.markdown 文件关联「打开方式」，后台异步、失败静默
-            #[cfg(target_os = "windows")]
-            std::thread::spawn(repair_file_association);
             let tray = build_tray(app.handle())?;
             app.manage(TrayState(Mutex::new(Some(tray))));
             app.manage(WindowBehavior::default());
@@ -1248,166 +1106,10 @@ pub fn run() {
             rename_path,
             remove_path,
             copy_path,
-            move_path,
-            // PDF 导出：WebView2 PrintToPdf 直接落盘（无打印对话框 / 无下载气泡）
-            print_to_pdf
+            move_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-// PDF 导出落盘参数（单位：英寸 —— WebView2 PrintSettings 的约定）。
-// 用结构体传参而不是七八个散参数：命令注册表在 Windows / 非 Windows 两份实现之间
-// 必须保持同一签名，结构体最省心。
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PdfPrintOptions {
-    path: String,
-    page_width: f64,
-    page_height: f64,
-    margin_top: f64,
-    margin_bottom: f64,
-    margin_left: f64,
-    margin_right: f64,
-}
-
-// PDF 导出：直接用 WebView2 的 PrintToPdf 落盘，不经过系统打印对话框、也不经过浏览器下载流程。
-//
-// 原实现（前端 iframe + contentWindow.print()）会拉起 Chromium 的打印预览，用户「另存为 PDF」
-// 时走的是浏览器下载管线 —— 窗口右上角会弹出 Edge 风格的「下载 xxx.pdf」气泡（用户反馈
-// 2026-10-25）；而且打印帧是另建的 srcdoc 文档，需要手工把 appCSS / katex / hljs 样式拼进去，
-// 拼漏一项就与阅读模式不一致（用户反馈的公式重复、代码高亮丢失都出在这条路上）。
-//
-// PrintToPdf 打印的是当前 webview 自身：前端只需把页面切到「打印态」（藏掉工具条/侧栏、
-// 展开滚动容器），样式天然就是阅读模式那一套，不存在「两套 CSS 漂移」；调用返回即表示文件
-// 已落盘，全程无 UI、无气泡、无下载目录残留。
-//
-// 失败面：旧版 WebView2 运行时没有 ICoreWebView2_7::PrintToPdf。此时返回错误，前端据此
-// 回退到原来的系统打印路径，不会让 PDF 导出整个不可用。
-#[cfg(target_os = "windows")]
-#[tauri::command]
-async fn print_to_pdf(
-    window: tauri::WebviewWindow,
-    options: PdfPrintOptions,
-) -> Result<(), String> {
-    use std::sync::mpsc::channel;
-    use webview2_com::Microsoft::Web::WebView2::Win32::{
-        ICoreWebView2_2, ICoreWebView2_7, ICoreWebView2Controller2, ICoreWebView2Environment6,
-        COREWEBVIEW2_COLOR,
-    };
-    use webview2_com::PrintToPdfCompletedHandler;
-    use windows::core::{Interface, PCWSTR};
-
-    let (tx, rx) = channel::<Result<(), String>>();
-    let path = options.path.clone();
-    let opts = options;
-
-    window
-        .with_webview(move |platform| {
-            let tx_cb = tx.clone();
-            let core = match unsafe { platform.controller().CoreWebView2() } {
-                Ok(c) => c,
-                Err(e) => {
-                    let _ = tx.send(Err(format!("拿不到 CoreWebView2: {e}")));
-                    return;
-                }
-            };
-            unsafe {
-                // 打印前把控制器默认背景临时改成纯白，打印完在回调里恢复。
-                // 根因（2026-10-27 用户实锤）：tauri.conf.json 的 backgroundColor="#f5f5f5"
-                // （防白屏闪烁）会成为 WebView2 控制器的 DefaultBackgroundColor，而
-                // PrintToPdf **用它画 PDF 的物理页边距区**（canvas 上 root 背景画不到的
-                // 部分）——前端 printStyle 把 html/body 全钉成 #fff 也管不到那里，PDF
-                // 四周永远一圈 #f5f5f5 灰。Chrome/CDP 没有 DefaultBackgroundColor 概念，
-                // 所以同样的 CSS 在 Chrome 打印验证里是纯白、真机却带灰圈。
-                // 注 1：DefaultBackgroundColor 在 ICoreWebView2Controller2（WebView2 1.0.664，
-                // 2020-09），比 PrintToPdf 所需的 ICoreWebView2_7 老得多，无版本顾虑。
-                // 注 2：必须从**控制器对象**上 QueryInterface（Controller2 派生自
-                // ICoreWebView2Controller），从 ICoreWebView2 上 cast 是一条不同的接口链，
-                // 会直接 E_NOINTERFACE（0x80004002）——2026-10-27 用户实测踩到，导出失败。
-                // 注 3：这一步只是美化（去灰圈），拿不到就跳过，绝不阻断导出。
-                // 外层已在 unsafe 块内，无需再嵌一层
-                let controller2 = platform.controller().cast::<ICoreWebView2Controller2>().ok();
-                // orig_bg 兜底值必须与 tauri.conf.json 的 backgroundColor 一致：万一某些
-                // 运行时不支持 GetDefaultBackgroundColor，恢复时不至于把 A=0 的透明色写回去。
-                let mut orig_bg = COREWEBVIEW2_COLOR { A: 255, R: 245, G: 245, B: 245 };
-                if let Some(c2) = controller2.clone() {
-                    let _ = c2.DefaultBackgroundColor(&mut orig_bg);
-                    let _ = c2.SetDefaultBackgroundColor(COREWEBVIEW2_COLOR {
-                        A: 255, R: 255, G: 255, B: 255,
-                    });
-                }
-                let core7 = match core.cast::<ICoreWebView2_7>() {
-                    Ok(c) => c,
-                    Err(e) => {
-                        if let Some(c2) = controller2.clone() {
-                            let _ = c2.SetDefaultBackgroundColor(orig_bg);
-                        }
-                        let _ = tx.send(Err(format!("WebView2 运行时过旧（缺 PrintToPdf）: {e}")));
-                        return;
-                    }
-                };
-                // 打印设置：页面尺寸 + 四边边距 + 打印背景色 + 不要页眉页脚
-                let settings = (|| -> windows::core::Result<_> {
-                    let core2 = core.cast::<ICoreWebView2_2>()?;
-                    let env = core2.Environment()?;
-                    let env6 = env.cast::<ICoreWebView2Environment6>()?;
-                    let s = env6.CreatePrintSettings()?;
-                    s.SetPageWidth(opts.page_width)?;
-                    s.SetPageHeight(opts.page_height)?;
-                    s.SetMarginTop(opts.margin_top)?;
-                    s.SetMarginBottom(opts.margin_bottom)?;
-                    s.SetMarginLeft(opts.margin_left)?;
-                    s.SetMarginRight(opts.margin_right)?;
-                    let _ = s.SetShouldPrintBackgrounds(true);
-                    let _ = s.SetShouldPrintHeaderAndFooter(false);
-                    Ok(s)
-                })();
-                let settings = match settings {
-                    Ok(s) => s,
-                    Err(e) => {
-                        let _ = tx.send(Err(format!("打印设置失败: {e}")));
-                        return;
-                    }
-                };
-                let handler = PrintToPdfCompletedHandler::create(Box::new(move |hr, ok| {
-                    // 无论成败都把控制器默认背景恢复为打印前的值（#f5f5f5 防白闪）
-                    // （闭包在外层 unsafe 块内定义，无需再嵌 unsafe）
-                    if let Some(c2) = controller2.clone() {
-                        let _ = c2.SetDefaultBackgroundColor(orig_bg);
-                    }
-                    let r = if hr.is_ok() && ok {
-                        Ok(())
-                    } else {
-                        Err(format!("PrintToPdf 失败: {hr:?}"))
-                    };
-                    let _ = tx_cb.send(r);
-                    Ok(())
-                }));
-                // 路径转 UTF-16 + NUL 结尾（PrintToPdf 收 PCWSTR）
-                let wide: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
-                if let Err(e) = core7.PrintToPdf(PCWSTR(wide.as_ptr()), &settings, &handler) {
-                    let _ = tx.send(Err(format!("PrintToPdf 调用失败: {e}")));
-                }
-            }
-        })
-        .map_err(|e| format!("with_webview 失败: {e}"))?;
-
-    // 超长文档分页渲染可能要十几秒；180s 只兜异常挂死
-    match rx.recv_timeout(std::time::Duration::from_secs(180)) {
-        Ok(r) => r,
-        Err(_) => Err("PrintToPdf 超时（180s）".to_string()),
-    }
-}
-
-// 非 Windows 平台暂无 PrintToPdf 等价能力：明确报错，让前端回退系统打印
-#[cfg(not(target_os = "windows"))]
-#[tauri::command]
-async fn print_to_pdf(
-    _window: tauri::WebviewWindow,
-    _options: PdfPrintOptions,
-) -> Result<(), String> {
-    Err("当前平台暂不支持 PrintToPdf，回退系统打印".to_string())
 }
 
 #[cfg(test)]

@@ -487,7 +487,7 @@
             ]),
             onChange: (v) => {
               this.settings.imageAssetPathMode = v;
-              this.settings.imageAssetPath = v === 'absolute' ? 'D:/images' : 'assets';
+              this.settings.imageAssetPath = v === 'absolute' ? '~/Pictures/images' : 'assets';
               const pathInput = document.getElementById('settings-image-asset-path');
               if (pathInput) pathInput.value = this.settings.imageAssetPath;
               if (typeof this.updateImageAssetPathHint === 'function') this.updateImageAssetPathHint();

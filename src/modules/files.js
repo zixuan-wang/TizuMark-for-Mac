@@ -552,7 +552,7 @@
       },
       validateFileName(name) {
         if (!name || !name.trim()) return this.t('nameEmpty');
-        if (/[\/\\:*?"<>|]/.test(name)) return this.t('nameInvalid');
+        if (/[/\\*?"<>|]/.test(name)) return this.t('nameInvalid');
         return null;
       },
       joinPath(parent, name) {

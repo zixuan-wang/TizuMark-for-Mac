@@ -529,11 +529,17 @@
         const show = scroll.scrollWidth > scroll.clientWidth && scroll.scrollLeft > 1;
         bc.classList.toggle('show-overflow', show);
       },
-      _jumpToHeadingLine(line) {
-        if (!this.cm) return;
-        // 所见即所得：目标标题在遮罩块内时先解罩该块（恢复源码态），否则 CM5 把光标
-        // clamp 到遮罩边缘、heightAtLine 量到的是整块遮罩 → 跳不准（2026-10-12 真机反馈：
-        // 编辑模式能跳到对应内容，所见即所得不行）。解罩后该行变真实行，定位即准确。
+      // 通用「跳到源码行」：大纲/面包屑/Mermaid 错误卡片共用。
+      // 所见即所得：目标行在遮罩块内时先解罩该块（恢复源码态），否则 CM5 把光标
+      // clamp 到遮罩边缘、heightAtLine 量到的是整块遮罩 → 跳不准（2026-10-12 真机反馈：
+      // 编辑模式能跳到对应内容，所见即所得不行）。解罩后该行变真实行，定位即准确。
+      _jumpToLine(line) {
+        if (!this.cm || !isFinite(line)) return;
+        // 引用/提示块分段遮罩也是 replacedWith 标记，先清分段再落光标，
+        // 否则目标行会被钳到段边界（与分段点击处理器同一口径）。
+        if (this.viewMode === 'wysiwyg' && typeof this._wysiwygClearQuoteSegments === 'function') {
+          this._wysiwygClearQuoteSegments();
+        }
         if (this.viewMode === 'wysiwyg' && typeof this.wysiwygBlockIndexAt === 'function') {
           const idx = this.wysiwygBlockIndexAt(line);
           if (idx >= 0 && this._wysiwygMarks && this._wysiwygMarks.has(idx)) {
@@ -545,6 +551,9 @@
         // WebView 中 scrollIntoView 不触发，改用精确滚动公式
         const y = this.cm.heightAtLine(line, 'local');
         this.cm.scrollTo(0, Math.max(0, y - 80));
+      },
+      _jumpToHeadingLine(line) {
+        this._jumpToLine(line);
       },
       updateBreadcrumb(force = false, line = null) {
         if (!this.cm) return;

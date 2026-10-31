@@ -249,3 +249,12 @@ test('含 = 的 ASCII 图表代码块高亮后结构合法', async () => {
   assert.ok(text.includes('f = w_r·f_r ⊕ w_c·f_c'), '代码块文本内容应保留等号表达式');
   assert.ok(text.includes('相机图像 → CNN(ResNet)'), '代码块文本内容应保留第二行');
 });
+
+test('无 hljs 时也必须跳过 mermaid 块（不得把行号数字拼进源码）', () => {
+  const { preview } = createPreviewDom();
+  preview.innerHTML = '<pre><code class="language-mermaid">flowchart TD\n  A --> B[foo()]</code></pre>';
+  processCodeBlocks(preview, { hljs: null, cache: new Map(), lineNumbers: true });
+  const code = preview.querySelector('pre code');
+  assert.strictEqual(code.textContent, 'flowchart TD\n  A --> B[foo()]', 'mermaid 源码不得被行号包裹');
+  assert.strictEqual(code.querySelector('.code-scroll'), null, 'mermaid 块不得出现代码块包裹结构');
+});

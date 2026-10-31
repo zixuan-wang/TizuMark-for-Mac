@@ -303,8 +303,167 @@ let mermaidIdSeq = 0;
 // 串行后各调用按序完成，互不干扰。
 let mermaidRunQueue = Promise.resolve();
 
+// Mermaid 错误信息解析：Mermaid 的 parse/lexical 错误形如
+// "Parse error on line 11:\n...\n-----^\nExpecting ... got 'PS'" 或
+// "Lexical error on line 2. Unrecognized text."。
+// 行号是**剥离 frontmatter/指令/注释后**的图表内 1-based 行号；code 是原始图表源码
+//（容器 textContent 已被错误 SVG 覆盖，必须由调用方传入）。
+// originalLine 把行号映射回原始源码（与 Mermaid preprocessDiagram 同一剥离规则），
+// 供卡片显示「文档第 N 行」与定位使用。
+function removeByRegexWithMap(text, map, regex) {
+  let outText = '';
+  const outMap = [];
+  let last = 0;
+  let m;
+  // 非全局正则会永远从 0 重新匹配 → while 不前进。统一补 g，杜绝挂起。
+  if (!regex.global) regex = new RegExp(regex.source, regex.flags + 'g');
+  regex.lastIndex = 0;
+  while ((m = regex.exec(text)) !== null) {
+    if (!m[0]) { regex.lastIndex++; continue; }
+    for (let i = last; i < m.index; i++) { outText += text[i]; outMap.push(map[i]); }
+    last = m.index + m[0].length;
+  }
+  for (let i = last; i < text.length; i++) { outText += text[i]; outMap.push(map[i]); }
+  return { text: outText, map: outMap };
+}
+
+function mapMermaidLineToSource(code, reportedLine) {
+  let cur = { text: String(code || '').replace(/\r\n?/g, '\n'), map: [] };
+  let lineNo = 1;
+  for (let i = 0; i < cur.text.length; i++) {
+    cur.map.push(lineNo);
+    if (cur.text[i] === '\n') lineNo++;
+  }
+  // 顺序与 Mermaid preprocessDiagram 一致：frontmatter → %%{...}%% 指令 → %% 注释 + trimStart
+  cur = removeByRegexWithMap(cur.text, cur.map, /^-{3}\s*\n(.*?)\n-{3}\s*\n+/gs);
+  cur = removeByRegexWithMap(cur.text, cur.map,
+    /%{2}{\s*(?:(\w+)\s*:|(\w+))\s*(?:(\w+)|((?:(?!}%{2}).|\n)*))?\s*(?:}%{2})?/gi);
+  cur = removeByRegexWithMap(cur.text, cur.map, /^\s*%%(?!{)[^\n]+\n?/gm);
+  let start = 0;
+  while (start < cur.text.length && /\s/.test(cur.text[start])) start++;
+  const text = cur.text.slice(start);
+  const map = cur.map.slice(start);
+  let idx = 0;
+  let ln = 1;
+  while (idx < text.length && ln < reportedLine) {
+    if (text[idx] === '\n') ln++;
+    idx++;
+  }
+  if (ln < reportedLine) return null;
+  return Number.isFinite(map[idx]) ? map[idx] : null;
+}
+
+function parseMermaidErrorInfo(message, code) {
+  const text = String(message || '');
+  const m = /(?:Parse|Lexical) error on line (\d+)/i.exec(text);
+  const line = m ? parseInt(m[1], 10) : null;
+  const originalLine = line != null ? mapMermaidLineToSource(code, line) : null;
+  const lines = String(code || '').replace(/\r\n?/g, '\n').split('\n');
+  const sourceLine = (originalLine && originalLine >= 1 && originalLine <= lines.length)
+    ? lines[originalLine - 1] : '';
+  return { line, originalLine, sourceLine, message: text, isParseError: line != null };
+}
+
+// Mermaid 成功渲染的 SVG 一定带 diagramType 的 aria-roledescription（addA11yInfo）；
+// parse 错误的炸弹带 aria-roledescription="error"；draw 期抛错的炸弹没有 aria
+//（永远走不到 addA11yInfo），只能靠 error-icon/error-text 标记识别。
+function isMermaidErrorSvg(svg) {
+  if (!svg) return false;
+  if (svg.getAttribute && svg.getAttribute('aria-roledescription') === 'error') return true;
+  return !!(svg.querySelector && svg.querySelector('.error-icon, .error-text'));
+}
+
+function isMermaidSuccessSvg(svg, runError) {
+  if (!svg || isMermaidErrorSvg(svg)) return false;
+  const role = svg.getAttribute && svg.getAttribute('aria-roledescription');
+  // 无 aria 的 SVG 只有在本次 run 未抛错时才视为成功（兼容 fake/旧版渲染器）
+  return role != null ? true : !runError;
+}
+
+// 常见成因提示：节点标签 [...] 内出现未加引号的 () {} [] " |。
+// 只做启发式判断，用于给出「加引号」提示，不影响错误本身是否展示。
+function hasUnquotedSpecialChars(sourceLine) {
+  const m = /\[([^\]]*)\]/.exec(String(sourceLine || ''));
+  if (!m) return false;
+  const inner = m[1].trim();
+  if (!inner) return false;
+  if (inner.startsWith('"') && inner.endsWith('"')) return false;
+  return /[()[\]{}"|]/.test(inner);
+}
+
+// 用 DOM API 重建容器内容为错误卡片（源码/错误信息一律 textContent，禁止 innerHTML）。
+function renderMermaidErrorCard(container, info, opts) {
+  const t = (opts && typeof opts.t === 'function') ? opts.t : (k) => k;
+  const doc = container.ownerDocument || document;
+  const sourceLineNo = parseInt(container.getAttribute('data-source-line'), 10);
+  const hasSource = Number.isFinite(sourceLineNo);
+  const diagramLine = (info && info.originalLine != null) ? info.originalLine : null;
+  const docLine = (diagramLine != null && hasSource) ? sourceLineNo + diagramLine : null;
+  const absLine = docLine != null ? docLine - 1 : null;
+
+  container.innerHTML = '';
+  container.removeAttribute('data-error-abs-line');
+  container.setAttribute('data-mermaid-error', '1');
+  if (absLine != null) container.setAttribute('data-error-abs-line', String(absLine));
+
+  const card = doc.createElement('div');
+  card.className = 'mermaid-error-card';
+
+  const title = doc.createElement('div');
+  title.className = 'mermaid-error-title';
+  title.textContent = (info && info.isParseError) ? t('mermaidErrorTitle') : t('mermaidErrorRenderFailed');
+  card.appendChild(title);
+
+  const line = doc.createElement('div');
+  line.className = 'mermaid-error-line';
+  line.textContent = (diagramLine != null && docLine != null)
+    ? t('mermaidErrorLine', { line: diagramLine, docLine })
+    : (diagramLine != null ? t('mermaidErrorLineOnly', { line: diagramLine }) : t('mermaidErrorNoLine'));
+  card.appendChild(line);
+
+  if (info && info.sourceLine) {
+    const src = doc.createElement('code');
+    src.className = 'mermaid-error-source';
+    src.textContent = info.sourceLine;
+    card.appendChild(src);
+  }
+
+  if (info && info.sourceLine && hasUnquotedSpecialChars(info.sourceLine)) {
+    const hint = doc.createElement('div');
+    hint.className = 'mermaid-error-hint';
+    hint.textContent = t('mermaidErrorHint');
+    card.appendChild(hint);
+  }
+
+  if (info && info.message) {
+    const details = doc.createElement('details');
+    details.className = 'mermaid-error-raw';
+    const summary = doc.createElement('summary');
+    summary.textContent = t('mermaidErrorRaw');
+    const pre = doc.createElement('pre');
+    pre.textContent = info.message;
+    details.appendChild(summary);
+    details.appendChild(pre);
+    card.appendChild(details);
+  }
+
+  if (absLine != null) {
+    const btn = doc.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mermaid-error-locate';
+    btn.textContent = t('mermaidErrorLocate');
+    btn.setAttribute('data-line', String(absLine));
+    card.appendChild(btn);
+  }
+
+  container.appendChild(card);
+}
+
 async function processMermaid(preview, opts) {
-  const { isDark, mermaidCache } = opts;
+  const { isDark, mermaidCache, t } = opts;
+  // WYSIWYG 遮罩渲染的是块切片，data-source-line 是块内相对行号；调用方传块起始
+  // 0-based 行（sourceLineBase）后统一还原为绝对 1-based 围栏行。阅读模式不传 = 0。
+  const sourceLineBase = (opts && Number.isFinite(opts.sourceLineBase)) ? opts.sourceLineBase : 0;
   if (typeof mermaid === 'undefined') return;
 
   const blocks = Array.from(preview.querySelectorAll('code.language-mermaid'));
@@ -313,9 +472,10 @@ async function processMermaid(preview, opts) {
   const themeKey = isDark ? 'dark' : 'light';
   const toRender = []; // cache miss：需调 mermaid.run 的容器
 
-  blocks.forEach((block, index) => {
+  blocks.forEach((block) => {
     const pre = block.parentElement;
-    const sourceLine = block.dataset.sourceLine;
+    const rawSourceLine = parseInt(block.dataset.sourceLine, 10);
+    const absoluteSourceLine = Number.isFinite(rawSourceLine) ? sourceLineBase + rawSourceLine : null;
     const code = block.textContent;
     const cacheKey = themeKey + '::' + code;
 
@@ -323,7 +483,7 @@ async function processMermaid(preview, opts) {
     container.className = 'mermaid-container';
     container.id = 'mermaid-' + Date.now() + '-' + (mermaidIdSeq = (mermaidIdSeq || 0) + 1);
     container.setAttribute('data-code', code);
-    if (sourceLine) container.setAttribute('data-source-line', sourceLine);
+    if (absoluteSourceLine != null) container.setAttribute('data-source-line', String(absoluteSourceLine));
 
     const cached = mermaidCache ? mermaidCache.get(cacheKey) : null;
     if (cached) {
@@ -332,7 +492,7 @@ async function processMermaid(preview, opts) {
     } else {
       // 未命中：放入待渲染队列（textContent 必须是原始 code，mermaid.run 才能解析）
       container.textContent = code;
-      toRender.push({ container, cacheKey });
+      toRender.push({ container, cacheKey, code });
     }
     pre.replaceWith(container);
   });
@@ -348,18 +508,29 @@ async function processMermaid(preview, opts) {
       securityLevel: 'strict',
       fontFamily: getComputedStyle(document.documentElement).getPropertyValue('--font-preview').trim() || '-apple-system, sans-serif',
     });
+    let runError = null;
     try {
       await mermaid.run({ nodes: toRender.map(x => x.container) });
     } catch (e) {
+      // 不 return：Mermaid 11 遇到坏图仍会继续渲染同批其他节点（错误节点被插入
+      // svg[aria-roledescription="error"]），这里继续逐容器收尾，坏图不再连累好图。
+      runError = e;
       if (typeof console !== 'undefined') console.error('Mermaid rendering error:', e);
-      return;
     }
-    // 渲染成功后存入缓存（仅缓存含 SVG 的成功结果，错误信息不缓存）
-    if (mermaidCache) {
-      for (const { container, cacheKey } of toRender) {
-        if (container.querySelector('svg')) {
-          mermaidCache.set(cacheKey, container.innerHTML);
+    for (const { container, cacheKey, code } of toRender) {
+      const svg = container.querySelector && container.querySelector('svg');
+      if (!isMermaidSuccessSvg(svg, runError)) {
+        let message = '';
+        if (mermaid && typeof mermaid.parse === 'function') {
+          try { await mermaid.parse(code); } catch (e) { message = String((e && e.message) || e); }
         }
+        if (!message && runError) message = String((runError && runError.message) || runError);
+        renderMermaidErrorCard(container, parseMermaidErrorInfo(message, code), { t });
+        continue;
+      }
+      // 只有确认成功的 SVG 才入缓存（parse/draw 失败的炸弹 SVG 一律不缓存）
+      if (mermaidCache) {
+        mermaidCache.set(cacheKey, container.innerHTML);
       }
     }
   };
@@ -439,6 +610,7 @@ if (typeof window !== 'undefined' && typeof module === 'undefined') {
   window.PreviewPost = {
     processEmojiShortcodes, processMath, processAbbreviations,
     processHeadings, processMermaid, addCopyButtons, getRawCodeText,
+    parseMermaidErrorInfo, hasUnquotedSpecialChars, renderMermaidErrorCard,
   };
 }
 if (typeof module !== 'undefined' && module.exports) {
@@ -446,5 +618,6 @@ if (typeof module !== 'undefined' && module.exports) {
     processEmojiShortcodes, processMath, processAbbreviations,
     processHeadings, processMermaid, addCopyButtons, EMOJI_MAP,
     protectUnpairedDollar, getRawCodeText,
+    parseMermaidErrorInfo, hasUnquotedSpecialChars, renderMermaidErrorCard,
   };
 }

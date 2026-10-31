@@ -2687,6 +2687,79 @@ body.is-resizing .side-btn {
   height: auto;
 }
 
+/* Mermaid 语法错误卡片（错误容器仍保留 .mermaid-container 的间距与边框） */
+.mermaid-container[data-mermaid-error] {
+  text-align: left;
+  border-color: var(--color-danger);
+}
+
+.mermaid-error-card {
+  font-size: 0.9em;
+  line-height: 1.55;
+}
+
+.mermaid-error-title {
+  font-weight: 600;
+  color: var(--color-danger);
+  margin-bottom: 4px;
+}
+
+.mermaid-error-line {
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.mermaid-error-source {
+  display: block;
+  background: var(--code-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  white-space: pre;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.92em;
+}
+
+.mermaid-error-hint {
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.mermaid-error-raw {
+  margin-bottom: 8px;
+}
+
+.mermaid-error-raw summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.mermaid-error-raw pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.86em;
+}
+
+.mermaid-error-locate {
+  padding: 4px 12px;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: calc(var(--ui-font-size) * 0.8462);
+  cursor: pointer;
+}
+
+.mermaid-error-locate:hover {
+  background-color: var(--accent-color);
+  color: var(--accent-text);
+  border-color: var(--accent-color);
+}
+
 /* Alert / Notice Boxes */
 .alert {
   border-radius: 10px;

@@ -653,8 +653,9 @@
         const mermaidContainers = Array.from(clone.querySelectorAll('.mermaid-container'));
         for (let mi = 0; mi < mermaidContainers.length; mi++) {
           const container = mermaidContainers[mi];
-          // 重渲染确保 SVG 就绪
-          if (typeof mermaid !== 'undefined' && container.getAttribute('data-code')) {
+          // 重渲染确保 SVG 就绪；错误卡片保留原样（没有可渲染的 SVG，也不该重跑失败路径）
+          if (typeof mermaid !== 'undefined' && container.getAttribute('data-code')
+              && !container.hasAttribute('data-mermaid-error')) {
             try {
               const code = (container.getAttribute('data-code') || '').trim();
               if (code) {

@@ -98,7 +98,7 @@
         // 阅读模式会直接展示旧配色的 SVG——小文档切模式时 applyViewMode 不会 updatePreview。
         if (this.viewMode === 'wysiwyg') await this._rerenderWysiwygMermaid(gen);
 
-        const containers = this.preview.querySelectorAll('.mermaid-container');
+        const containers = this.preview.querySelectorAll('.mermaid-container:not([data-mermaid-error])');
         if (containers.length === 0) return;
   
         // 保存代码并创建全新容器（避免复用旧容器的渲染状态）
@@ -149,7 +149,7 @@
           // （layout 计算），图表多时阻塞主线程造成明显卡顿（含转圈动画被卡住）。
           // 分批渲染：每批【渲染前】先让出主线程一帧（保证转圈持续转动、不被阻塞），
           // 图表较多时再叠加预览区 loading 提示。
-          const nodes = Array.from(this.preview.querySelectorAll('.mermaid-container'));
+          const nodes = Array.from(this.preview.querySelectorAll('.mermaid-container:not([data-mermaid-error])'));
           const BATCH = 2;
           const showLoading = nodes.length > 6;
           if (showLoading) this._beginPaneLoad();
@@ -197,6 +197,7 @@
         // 会由 processMermaid 按新主题渲染，无需在此处理。
         const prepared = [];
         for (const c of containers) {
+          if (c.hasAttribute('data-mermaid-error')) continue; // 卡片用 CSS 变量自适应，无需重跑
           const code = c.getAttribute('data-code');
           if (!code) continue;
           c.removeAttribute('data-processed');

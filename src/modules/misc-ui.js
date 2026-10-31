@@ -31,8 +31,25 @@
   
           const mermaidContainer = e.target.closest('.mermaid-container');
           if (mermaidContainer) {
+            const isErrorCard = mermaidContainer.hasAttribute('data-mermaid-error');
+            // 错误卡片内的「原始错误信息」details/summary 放行默认展开：不跳转、不拦截
+            if (isErrorCard && e.target.closest && e.target.closest('summary, details')) return;
             e.preventDefault();
             e.stopPropagation();
+            if (isErrorCard) {
+              const line = parseInt(mermaidContainer.getAttribute('data-error-abs-line'), 10);
+              if (isFinite(line) && typeof this._jumpToLine === 'function') {
+                // 纯阅读模式编辑器整栏隐藏，跳光标用户看不到任何反馈 →
+                // 「定位到源码」先切到源码视图（清掉视图恢复定时器，避免 50ms 后覆盖跳转）
+                if (this.viewMode === 'preview' && typeof this.setViewMode === 'function') {
+                  clearTimeout(this._viewModeRestoreTimer);
+                  this._viewModeRestoreTimer = null;
+                  this.setViewMode('edit');
+                }
+                this._jumpToLine(line);
+              }
+              return;
+            }
             // 锚点必须是容器而非 svg：closest('.mermaid-container svg') 只匹配「自身是 svg 且
             // 祖先有 container」的节点——点击 svg 内部（rect/text 等）能向上命中 svg，但点击
             // 容器内边距（两侧灰色区，target 是 div 本身）匹配不到，lightbox 打不开。

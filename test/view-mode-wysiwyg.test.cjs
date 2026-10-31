@@ -2243,8 +2243,8 @@ test('配色方案：default 白底蓝 + 独立 classic 主题 + 设置项/导�
 
 test('所见即所得跳转修复：面包屑/锚点/全局搜索跳转前解罩目标块', () => {
   const laySrc = fs.readFileSync(path.join(ROOT, 'src', 'modules', 'layout.js'), 'utf8');
-  const jIdx = laySrc.indexOf('_jumpToHeadingLine(line) {');
-  assert.ok(jIdx > 0, '缺少 _jumpToHeadingLine');
+  const jIdx = laySrc.indexOf('_jumpToLine(line) {');
+  assert.ok(jIdx > 0, '缺少 _jumpToLine');
   const jblk = laySrc.slice(jIdx, jIdx + 1400);
   assert.match(jblk, /this\.viewMode === 'wysiwyg'/, '面包屑跳转未识别 wysiwyg 模式');
   assert.match(jblk, /this\.setWysiwygActiveBlock\(idx\)/, '面包屑跳转未先解罩目标块（光标被 clamp 到遮罩边缘，跳不准）');

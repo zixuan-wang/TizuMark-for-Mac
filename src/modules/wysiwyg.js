@@ -921,6 +921,7 @@
       node.className = MASK_CLASS + ' preview-content';
       node.innerHTML = html;
       node.setAttribute('data-block-index', String(idx));
+      node.setAttribute('data-source-line-base', String(b.start));
       node.setAttribute('contenteditable', 'false');
       this._wysiwygMaskTypography(node);
       this._postProcessWysiwygNode(node);
@@ -1003,6 +1004,18 @@
         // 代码块复制按钮：放行 click（拦截 mousedown 会吞掉 click、光标被拽到源码行，
         // 复制按钮点不动）。按钮自身已阻止冒泡，这里只需不 preventDefault。
         if (ev.target && ev.target.closest && ev.target.closest('button.copy-btn')) return;
+        // Mermaid 错误卡片：整卡/按钮均可跳到出错行（先于通用 mermaid 分支，
+        // 避免错误卡片没有 svg 时被静默吞掉）。
+        const mermaidErrHit = ev.target && ev.target.closest
+          ? ev.target.closest('.mermaid-container[data-mermaid-error]') : null;
+        if (mermaidErrHit) {
+          // 「原始错误信息」details/summary 放行默认展开：不跳转、不解罩
+          if (ev.target.closest && ev.target.closest('summary, details')) return;
+          ev.preventDefault();
+          const line = parseInt(mermaidErrHit.getAttribute('data-error-abs-line'), 10);
+          if (Number.isFinite(line) && typeof self._jumpToLine === 'function') self._jumpToLine(line);
+          return;
+        }
         // 块编辑按钮（2026-10-11 用户反馈 #4）：显式「进入本块编辑」入口——先取标记
         // 实时位置（撤遮罩后 mark 失效），再撤遮罩并把光标定位到块首行。
         const editBtnEl = ev.target && ev.target.closest ? ev.target.closest('button.block-edit-btn') : null;
@@ -1425,6 +1438,10 @@
         node.className = MASK_CLASS + ' preview-content ' + cls + openCls + deepCls;
         node.innerHTML = html;
         node.setAttribute('data-block-index', String(idx));
+        // 分段源码的基准行：底段若前置合成 markerLine，源码第 2 行才是 rawE+1，
+        // 故基准 = s - 1（marker 占第 1 行）；其余情况 = s。
+        const markerUsed = cls === 'wysiwyg-quote-seg-bottom' && !!markerLine;
+        node.setAttribute('data-source-line-base', String(markerUsed ? s - 1 : s));
         node.setAttribute('contenteditable', 'false');
         this._wysiwygMaskTypography(node);
         this._postProcessWysiwygNode(node);
@@ -1434,6 +1451,16 @@
         //（引用段内无这些交互，点哪行即编辑哪行）
         node.addEventListener('mousedown', (ev) => {
           ev.stopPropagation();
+          // 引用分段内的 Mermaid 错误卡片：与整块遮罩同一跳转口径；summary 放行展开
+          const errHit = ev.target && ev.target.closest
+            ? ev.target.closest('.mermaid-container[data-mermaid-error]') : null;
+          if (errHit) {
+            if (ev.target.closest && ev.target.closest('summary, details')) return;
+            ev.preventDefault();
+            const line = parseInt(errHit.getAttribute('data-error-abs-line'), 10);
+            if (Number.isFinite(line) && typeof self._jumpToLine === 'function') self._jumpToLine(line);
+            return;
+          }
           if (self._wysiwygTableDrag) { ev.preventDefault(); return; }
           ev.preventDefault();
           try {
@@ -1624,7 +1651,7 @@
     // 各 stage 均幂等（KaTeX 渲染过的节点被 walker 跳过，code-scroll 包裹过的块被跳过）。
     _postProcessWysiwygNode(node) {
       const postOpts = {
-        t: (k) => (this.t ? this.t(k) : k),
+        t: (k, p) => (this.t ? this.t(k, p) : k),
         isDark: !!this.isDark,
         escapeHtml: (s) => (this.escapeHtml ? this.escapeHtml(s) : String(s == null ? '' : s)),
         escapeAttr: (s) => (this.escapeAttr ? this.escapeAttr(s) : String(s == null ? '' : s)),
@@ -1715,13 +1742,23 @@
       // Mermaid：RenderPost 共享 stage + 同一 mermaidCache（命中缓存时近乎同步；
       // 串行化/id 唯一化在 processMermaid 内部）
       if (hasMmd) {
+        // 遮罩渲染的是块切片：块内 data-source-line 是相对行号，传块起始行让
+        // processMermaid 还原为绝对行号（错误卡片的「文档第 N 行」与定位依赖它）。
+        // 渲染源基准行由遮罩创建方写入（整块 = block.start；引用分段 = 段源码起点，
+        // callout 底段前置合成 marker 时再 -1）。不反查块表，避免分段/越界时取错行。
+        const baseAttr = parseInt(node.getAttribute && node.getAttribute('data-source-line-base'), 10);
+        const maskIdx = parseInt(node.getAttribute && node.getAttribute('data-block-index'), 10);
+        const maskBlock = (this._wysiwygBlocks && Number.isFinite(maskIdx))
+          ? this._wysiwygBlocks[maskIdx] : null;
+        const blockStart = Number.isFinite(baseAttr) ? baseAttr : (maskBlock ? maskBlock.start : null);
         RenderPost.runMermaid(node, {
-          t: (k) => (this.t ? this.t(k) : k),
+          t: (k, p) => (this.t ? this.t(k, p) : k),
           isDark: !!this.isDark,
           escapeHtml: (s) => (this.escapeHtml ? this.escapeHtml(s) : String(s == null ? '' : s)),
           escapeAttr: (s) => (this.escapeAttr ? this.escapeAttr(s) : String(s == null ? '' : s)),
           headingToId: (s) => (this.headingToId ? this.headingToId(s) : String(s == null ? '' : s)),
           mermaidCache: this._mermaidCache,
+          sourceLineBase: blockStart,
         }).then(() => {
           if (settled()) this._wysiwygRefreshAfterMaskChange();
         }).catch((e) => console.warn('[wysiwyg] Mermaid error:', e));

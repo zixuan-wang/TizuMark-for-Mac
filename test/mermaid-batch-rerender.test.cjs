@@ -260,3 +260,57 @@ test('接线断言：应用内 mermaid 初始化一律 strict，只有导出路�
   const exp = read('src/modules/export.js');
   assert.ok(/securityLevel\s*:\s*'loose'/.test(exp), '导出路径应保留 loose（保真），不要跟着改成 strict');
 });
+
+test('主题重渲染：跳过 data-mermaid-error 容器（不重跑、不丢失卡片）', async () => {
+  const { w } = await buildEnv();
+  const ed = await waitForEditor(w);
+  try {
+    const mermaid = fakeMermaidWithSvg();
+    w.mermaid = mermaid;
+    ed.viewMode = 'wysiwyg';
+
+    const err = w.document.createElement('div');
+    err.className = 'mermaid-container';
+    err.setAttribute('data-code', 'flowchart TD; A --> B[foo()]');
+    err.setAttribute('data-mermaid-error', '1');
+    err.innerHTML = '<div class="mermaid-error-card"></div>';
+    ed.cm.getWrapperElement().appendChild(err);
+
+    const ok = makeMaskMermaid(w, ed.cm, 'graph LR; A-->B');
+
+    await ed.rerenderMermaid();
+
+    assert.ok(err.querySelector('.mermaid-error-card'), '错误卡片必须仍在');
+    assert.strictEqual(err.getAttribute('data-mermaid-error'), '1');
+    assert.deepStrictEqual(mermaid.runs.flat(), ['graph LR; A-->B'], '错误容器不得被重跑');
+    assert.ok(ok.querySelector('svg.fake-theme-svg'));
+  } finally { cleanup(w); }
+});
+
+test('主题重渲染：#preview 同样跳过 data-mermaid-error 容器', async () => {
+  const { w } = await buildEnv();
+  const ed = await waitForEditor(w);
+  try {
+    const mermaid = fakeMermaidWithSvg();
+    w.mermaid = mermaid;
+    ed.viewMode = 'preview';
+    const err = w.document.createElement('div');
+    err.className = 'mermaid-container';
+    err.setAttribute('data-code', 'flowchart TD; A --> B[foo()]');
+    err.setAttribute('data-mermaid-error', '1');
+    err.innerHTML = '<div class="mermaid-error-card"></div>';
+    ed.preview.appendChild(err);
+
+    const ok = w.document.createElement('div');
+    ok.className = 'mermaid-container';
+    ok.setAttribute('data-code', 'graph TD; A-->B');
+    ok.textContent = 'graph TD; A-->B';
+    ed.preview.appendChild(ok);
+
+    await ed.rerenderMermaid();
+
+    assert.ok(ed.preview.contains(err), '错误容器必须仍在 #preview');
+    assert.ok(err.querySelector('.mermaid-error-card'), '错误卡片不得被清掉');
+    assert.deepStrictEqual(mermaid.runs.flat(), ['graph TD; A-->B'], '错误容器不得被重跑');
+  } finally { cleanup(w); }
+});

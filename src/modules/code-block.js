@@ -112,6 +112,9 @@ function processCodeBlocks(preview, opts) {
     // 代码块行号（拆分代码行，CSS 控制行号显隐和换行）
     try {
       preview.querySelectorAll('pre code').forEach((block) => {
+        // 与 hljs 分支同一跳过口径：mermaid/数学块由各自渲染器接管，
+        // 包行号会把行号数字拼进源码（无 hljs 时图表解析必失败）。
+        if (/language-(math|mermaid|katex)/.test(block.className || '')) return;
         if (block.querySelector('.code-scroll')) return;
         const lines = block.textContent.split('\n');
         block.innerHTML = buildCodeScrollNoHljs(lines);

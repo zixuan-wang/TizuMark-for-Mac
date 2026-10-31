@@ -209,7 +209,7 @@
         try { await this.app.processImages(); } catch (e) { console.warn('[preview] Images error:', e); }
         if (gen !== this.app._renderGeneration) { this.app._resumeScroll(); return; }
         const postOpts = {
-          t: (k) => this.app.t(k),
+          t: (k, p) => this.app.t(k, p),
           isDark: this.app.isDark,
           escapeHtml: (s) => this.app.escapeHtml(s),
           escapeAttr: (s) => this.app.escapeAttr(s),

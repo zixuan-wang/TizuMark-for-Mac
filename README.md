@@ -10,8 +10,9 @@
 🌐 **简体中文** | [English](README.en.md) | [Español](README.es.md)
 
 TizuMark 是一个轻量的 Markdown 编辑器（CodeMirror 5 + Tauri 2，渲染引擎为 macOS 自带的 WKWebView）。
-本仓库是**仅供本机自用的 macOS 专用版**：由上游 Windows 版裁剪而来，删除了全部 Windows 兼容代码，
-并移除了 **PDF 导出**与**自动更新**两项功能。不对外发布。
+本仓库是**仅供本机自用的 macOS 专用版**：由上游 [TizuMark-Markdown-Editor](https://github.com/tizuio/TizuMark-Markdown-Editor)
+（Windows 版）裁剪而来，删除了全部 Windows 兼容代码，并移除了 **PDF 导出**与**自动更新**两项功能。不对外发布。
+本仓库**已断开 GitHub fork 关系，作为独立仓库维护**；上游地址与同步策略见 [docs/UPSTREAM.md](docs/UPSTREAM.md)。
 
 ## 功能
 

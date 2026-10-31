@@ -298,10 +298,6 @@
           if (qqLabel) qqLabel.textContent = t('qqGroupName');
           if (qqJoinText) qqJoinText.textContent = t('joinGroup');
           if (qqBadge) qqBadge.title = t('qqTitle');
-          const giteeAction = aboutSections[1].querySelector('.gitee-action');
-          const giteeBadge = document.getElementById('gitee-badge');
-          if (giteeAction) giteeAction.textContent = t('giteeAction');
-          if (giteeBadge) giteeBadge.title = t('giteeTitle');
           const githubAction = aboutSections[1].querySelector('.github-action');
           const githubBadge = document.getElementById('github-badge');
           if (githubAction) githubAction.textContent = t('githubAction');

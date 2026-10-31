@@ -705,9 +705,8 @@ node scripts/run-tests.cjs "wysiwyg"   # 例：wysiwyg 相关（blocks/view-mode
 - [ ] 设置→配色方案：默认=白底蓝、经典=旧暖灰；导出 md 的 data-color-scheme 透传正确（2026-10-12）
 - [ ] 所见即所得下点面包屑标题 / 目录锚点 / 全局搜索结果：目标块先解罩、跳点准确（2026-10-12）
 
-## 8. 推送与远程同步约定（2026-10-07 起）
+## 8. 推送与远程同步约定（2026-10-31 更新）
 
-- **只推 gitee（origin）**：`git push origin master`。本机 `origin` 已切到 SSH（`git@gitee.com:tizu/TizuMark-Markdown-Editor.git`），因本机无 gitee HTTPS 凭据。
-- gitee 已配置到 github 的**镜像自动同步**：推 gitee 后由 gitee 自动同步到 `git@github.com:tizuio/TizuMark-Markdown-Editor.git`，**不再手动推 github**。
-- 切换电脑后：任选 gitee / github 一端 clone 即可，两者内容一致。
+- **唯一远程 `origin`**：`git push origin master`，地址 `git@github.com:zixuan-wang/TizuMark-for-Mac.git`（SSH）。
+- 仓库已改为本地 fork 的 macOS 专用版，仅保留单一远程，不再做跨平台镜像同步。
 - 分叉根因备忘：本地曾因「重建 git 基线」产生孤儿根提交 `20bec86` 并误带 `.git-broken-20261006` junk；已用 commit-tree 在 github master(64964fd) 上重建 C1/C2/C3 干净线性历史并快进推送，junk 已剔除。

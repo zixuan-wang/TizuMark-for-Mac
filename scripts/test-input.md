@@ -81,7 +81,7 @@
 
 脚注内含链接[^withlink]。
 
-[^withlink]: 参见 [TizuMark 项目](https://github.com/tizuio/TizuMark-Markdown-Editor) 了解更多。
+[^withlink]: 参见 [TizuMark 项目](https://github.com/zixuan-wang/TizuMark-for-Mac) 了解更多。
 
 **检查：** 脚注区中"TizuMark 项目"是可点击的链接。
 

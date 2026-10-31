@@ -94,7 +94,7 @@
             return;
           }
   
-          // 外部 http(s) 链接：即便以 .md 结尾也是 gitee/github 等网页，
+          // 外部 http(s) 链接：即便以 .md 结尾也是 GitHub 等网页，
           // 一律用系统浏览器打开；不要在 app 内 fetch 渲染（webview 跨域 fetch 必失败且无意义）。
           if (href.startsWith('http://') || href.startsWith('https://')) {
             this.openExternal(href);
@@ -736,10 +736,6 @@
       document.getElementById('about-close').addEventListener('click', () => this.hideAbout());
       document.getElementById('about-dialog').addEventListener('click', (e) => {
         if (e.target.id === 'about-dialog') this.hideAbout();
-      });
-      document.getElementById('gitee-badge').addEventListener('click', () => {
-        const url = document.getElementById('gitee-badge').dataset.url;
-        if (url) this.openExternal(url);
       });
       document.getElementById('qq-group-badge').addEventListener('click', () => {
         const badge = document.getElementById('qq-group-badge');

@@ -22,13 +22,17 @@ test('存在 exit_app 统一退出入口，且先清 TrayState 再 app.exit', ()
 });
 
 test('所有退出路径统一走 exit_app，无直接 app.exit 绕过', () => {
-  // quit_app 命令（关闭弹框「退出」）、托盘菜单 quit、CloseRequested 非托盘分支
+  // quit_app 命令（关闭弹框「退出」）、CloseRequested 非托盘分支；
+  // 托盘菜单 quit 改为交给前端流程（最终仍走 quit_app → exit_app）。
   const callSites = (libRs.match(/exit_app\(/g) || []).length;
-  assert.ok(callSites >= 4, 'exit_app 定义 + 至少三处调用，实际 ' + callSites);
+  assert.ok(callSites >= 3, 'exit_app 定义 + 至少两处调用，实际 ' + callSites);
   assert.ok(/fn quit_app\(app: tauri::AppHandle\) \{\s*exit_app\(app\);/.test(libRs),
     'quit_app 应转发 exit_app');
-  assert.ok(/"quit" => \{\s*exit_app\(app\.clone\(\)\);/.test(libRs),
-    '托盘菜单退出应走 exit_app');
+  const trayQuit = libRs.match(/"quit" => \{[\s\S]*?\n                \}/);
+  assert.ok(trayQuit, '应能提取托盘 quit 分支');
+  assert.ok(/show_window\(&window\)/.test(trayQuit[0]), '托盘退出应先显示窗口');
+  assert.ok(/emit\("quit-requested"/.test(trayQuit[0]), '托盘退出应交给前端退出流程');
+  assert.ok(!/exit_app\(/.test(trayQuit[0]), '托盘退出不应直接 exit_app');
   assert.ok(/if !show_tray \{\s*exit_app\(app\.clone\(\)\);/.test(libRs),
     'CloseRequested 非托盘分支应走 exit_app');
   // 除 exit_app 函数体内，不允许任何直接 app.exit(0)

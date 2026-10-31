@@ -7,7 +7,7 @@ use tauri::{Emitter, Manager};
 use tauri::path::BaseDirectory;
 use tauri::WindowEvent;
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState};
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 use md5::{Md5, Digest};
 
@@ -240,6 +240,76 @@ impl Default for WindowBehavior {
 
 struct TrayState(Mutex<Option<TrayIcon>>);
 
+// 应用菜单：复刻 Tauri 默认 macOS 菜单结构，仅把 Quit 换成普通菜单项。
+// 背景：PredefinedMenuItem::quit 走 terminate:，直接杀进程，绕过前端保存提示、
+// 会话保存与托盘图标清理。自定义项点击后 emit quit-requested，由前端统一退出。
+fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    let pkg_info = app.package_info();
+    let config = app.config();
+    let about_metadata = AboutMetadata {
+        name: Some(pkg_info.name.clone()),
+        version: Some(pkg_info.version.to_string()),
+        copyright: config.bundle.copyright.clone(),
+        authors: config.bundle.publisher.clone().map(|p| vec![p]),
+        ..Default::default()
+    };
+
+    let quit = MenuItem::with_id(
+        app,
+        "quit-app",
+        format!("Quit {}", pkg_info.name),
+        true,
+        Some("Cmd+Q"),
+    )?;
+
+    let app_menu = Submenu::with_items(app, pkg_info.name.clone(), true, &[
+        &PredefinedMenuItem::about(app, None, Some(about_metadata))?,
+        &PredefinedMenuItem::separator(app)?,
+        &PredefinedMenuItem::services(app, None)?,
+        &PredefinedMenuItem::separator(app)?,
+        &PredefinedMenuItem::hide(app, None)?,
+        &PredefinedMenuItem::hide_others(app, None)?,
+        &PredefinedMenuItem::separator(app)?,
+        &quit,
+    ])?;
+    let file_menu = Submenu::with_items(app, "File", true, &[
+        &PredefinedMenuItem::close_window(app, None)?,
+    ])?;
+    let edit_menu = Submenu::with_items(app, "Edit", true, &[
+        &PredefinedMenuItem::undo(app, None)?,
+        &PredefinedMenuItem::redo(app, None)?,
+        &PredefinedMenuItem::separator(app)?,
+        &PredefinedMenuItem::cut(app, None)?,
+        &PredefinedMenuItem::copy(app, None)?,
+        &PredefinedMenuItem::paste(app, None)?,
+        &PredefinedMenuItem::select_all(app, None)?,
+    ])?;
+    let view_menu = Submenu::with_items(app, "View", true, &[
+        &PredefinedMenuItem::fullscreen(app, None)?,
+    ])?;
+    let window_menu = Submenu::with_id_and_items(
+        app,
+        tauri::menu::WINDOW_SUBMENU_ID,
+        "Window",
+        true,
+        &[
+            &PredefinedMenuItem::minimize(app, None)?,
+            &PredefinedMenuItem::maximize(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::close_window(app, None)?,
+        ],
+    )?;
+    let help_menu = Submenu::with_id_and_items(
+        app,
+        tauri::menu::HELP_SUBMENU_ID,
+        "Help",
+        true,
+        &[],
+    )?;
+
+    Menu::with_items(app, &[&app_menu, &file_menu, &edit_menu, &view_menu, &window_menu, &help_menu])
+}
+
 fn build_tray(app: &tauri::AppHandle) -> tauri::Result<TrayIcon> {
     let show = MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
@@ -256,7 +326,11 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<TrayIcon> {
                     }
                 }
                 "quit" => {
-                    exit_app(app.clone());
+                    // 与其他退出入口一致：先显示窗口，再交给前端（未保存提示/会话/托盘清理）
+                    if let Some(window) = app.get_webview_window("main") {
+                        show_window(&window);
+                        let _ = window.emit("quit-requested", ());
+                    }
                 }
                 _ => {}
             }
@@ -1091,6 +1165,15 @@ pub fn run() {
                 })
                 .build(),
         )
+        .menu(|app| build_app_menu(app))
+        .on_menu_event(|app, event| {
+            if event.id().as_ref() == "quit-app" {
+                if let Some(window) = app.get_webview_window("main") {
+                    show_window(&window); // 可能隐藏到托盘：先显示再弹前端对话框
+                    let _ = window.emit("quit-requested", ());
+                }
+            }
+        })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let app = window.app_handle();

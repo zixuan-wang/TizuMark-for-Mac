@@ -274,6 +274,7 @@
           { combo: 'Cmd+V', group: 'edit', name: '粘贴', desc: '在光标处粘贴剪贴板内容' },
           { combo: 'Tab', group: 'edit', name: '增加缩进', desc: '为当前行或选中的多行增加一级缩进' },
           { combo: 'Shift+Tab', group: 'edit', name: '减少缩进', desc: '为当前行或选中的多行减少一级缩进' },
+          { combo: 'Cmd+Q', group: 'app', name: '退出应用', desc: '退出 TizuMark；有未保存文档时先询问是否保存' },
         ];
         const EN = [
           { combo: 'Cmd+Home', group: 'nav', name: 'Go to start', desc: 'Move the cursor to the very beginning of the document' },
@@ -292,6 +293,7 @@
           { combo: 'Cmd+V', group: 'edit', name: 'Paste', desc: 'Paste clipboard content at the cursor' },
           { combo: 'Tab', group: 'edit', name: 'Indent', desc: 'Add one level of indent to the line or selection' },
           { combo: 'Shift+Tab', group: 'edit', name: 'Outdent', desc: 'Remove one level of indent from the line or selection' },
+          { combo: 'Cmd+Q', group: 'app', name: 'Quit app', desc: 'Quit TizuMark; asks to save unsaved documents first' },
         ];
         const ES = [
           { combo: 'Cmd+Home', group: 'nav', name: 'Ir al inicio', desc: 'Mueve el cursor al principio del documento' },
@@ -310,6 +312,7 @@
           { combo: 'Cmd+V', group: 'edit', name: 'Pegar', desc: 'Pega el contenido del portapapeles en la posición del cursor' },
           { combo: 'Tab', group: 'edit', name: 'Aumentar sangría', desc: 'Añade un nivel de sangría a la línea o selección' },
           { combo: 'Shift+Tab', group: 'edit', name: 'Reducir sangría', desc: 'Reduce un nivel de sangría a la línea o selección' },
+          { combo: 'Cmd+Q', group: 'app', name: 'Salir de la aplicación', desc: 'Sale de TizuMark; pregunta si guardar los documentos sin guardar' },
         ];
         const lang = (this.settings && this.settings.language) || 'zh';
         return lang === 'en' ? EN : (lang === 'es' ? ES : ZH);
@@ -471,7 +474,8 @@
   
         const builtinHtml =
           builtinTable('nav', this.t('builtinNavGroup')) +
-          builtinTable('edit', this.t('builtinEditGroup'));
+          builtinTable('edit', this.t('builtinEditGroup')) +
+          builtinTable('app', this.t('builtinAppGroup'));
   
         const caretHtml = '<svg class="collapse-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
         // 分类标题左侧图标：与文件/大纲面板头的 panel-title-icon 同一类名，保持视觉统一
@@ -889,6 +893,10 @@
         };
         for (const [action, fn] of Object.entries(globalMap)) registerGlobal(action, fn, false);
         for (const [action, fn] of Object.entries(editorMap)) registerGlobal(action, fn, true);
+
+        // ⌘Q 退出应用：固定内置键位（不可配置，见 getBuiltinFixedShortcuts）。
+        // 全局派发对未命中的 Cmd 组合会 preventDefault；不在此注册，⌘Q 会被静默吞掉。
+        this.globalShortcutLookup['Ctrl+Q'] = () => this.handleAppClose('quit');
   
         // 同步「关闭到托盘」键位到 OS 级全局热键：窗口隐藏到托盘后 WebView 收不到键盘
         // 事件，前端 keydown 无法唤回窗口；OS 级热键（lib.rs set_close_to_tray_shortcut）
@@ -992,9 +1000,13 @@
 
     // 同步「关闭到托盘」全局热键到 Rust（OS 级：窗口隐藏后仍能唤出/隐藏）
     async _syncGlobalCloseToTrayShortcut(key) {
+      // ⌘Q 是固定退出键：旧配置若把「关闭到托盘」绑到 ⌘Q，绝不注册 OS 级热键
+      // （否则会全局抢走其他应用的 ⌘Q，且应用内 ⌘Q 会变成隐藏窗口）；
+      // 下发空 key 仅注销此前可能已注册的旧热键。
+      const isQuitKey = !!key && this._normalizeShortcutKey(key) === this._normalizeShortcutKey('Cmd+Q');
       // macOS 全局热键：内部 token 'Ctrl' 语义即 ⌘，注册 OS 级热键时必须换 'Cmd'，
       // 否则注册成真 Control 组合键（与用户按下的 ⌘ 不符）。
-      const osKey = (key || '').replace(/^Ctrl(?=\+|$)/, 'Cmd');
+      const osKey = isQuitKey ? '' : (key || '').replace(/^Ctrl(?=\+|$)/, 'Cmd');
       try {
         await TauriApi.setCloseToTrayShortcut({ key: osKey });
       } catch (err) {

@@ -6,7 +6,11 @@
   const { Tab } = TMConst;
 
   const mixin = {
-      async handleAppClose() {
+      // forceAction：强制指定关闭行为（⌘Q/菜单退出传 'quit'），跳过「关闭窗口时」询问；
+      // 未保存文档确认仍然保留。按键与菜单事件可能同时触发，用 _closeInProgress 防重入。
+      async handleAppClose(forceAction) {
+        if (this._closeInProgress) return;
+        this._closeInProgress = true;
         try {
           const appWindow = TauriApi.currentWindow();
           // 1. 处理未保存文档
@@ -43,7 +47,7 @@
           }
           // 2. 先解析关闭行为：只有真正退出（quit）才按「退出时关闭所有标签」处理会话；
           //    取消直接返回不清会话；最小化到托盘等其它行为一律保存会话。
-          const action = await this._resolveCloseAction();
+          const action = forceAction || await this._resolveCloseAction();
           if (!action) return; // 用户在弹框点了取消（不清会话）
           if (action === 'quit') {
             // 3a. 真正退出：按「退出时关闭所有标签」开关决定保存还是清空会话
@@ -64,6 +68,8 @@
             const w = TauriApi.currentWindow();
             if (w) await w.hide();
           } catch { /* 浏览器环境下降级 */ }
+        } finally {
+          this._closeInProgress = false;
         }
       },
       async hideToTray() {

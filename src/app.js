@@ -496,6 +496,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     await TauriApi.onEvent('close-requested', async () => {
       await window.editor.handleAppClose();
     });
+    // 系统菜单「Quit TizuMark」：Rust 侧自定义菜单项转发到前端，走同一退出流程
+    await TauriApi.onEvent('quit-requested', async () => {
+      await window.editor.handleAppClose('quit');
+    });
 
     // 工作区目录树随外部文件增删自动刷新（由 Rust watch_folder 广播 folder-changed 事件）
     await TauriApi.onEvent('folder-changed', () => {
